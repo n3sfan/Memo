@@ -30,17 +30,17 @@ Kế hoạch này chuyển thiết kế MVP thành chuỗi coding task tăng d�
     - Cấu hình `analysis_options.yaml` (flutter_lints) và test framework `flutter test` + **glados**
     - _Requirements: 1.1, 7.2, 9.1_
 
-- [ ] 2. Hạ tầng triển khai (Docker, PM2, Nginx TLS)
-  - [ ] 2.1 Viết `docker-compose.yml` + `Dockerfile` backend
+- [x] 2. Hạ tầng triển khai (Docker, PM2, Nginx TLS)
+  - [x] 2.1 Viết `docker-compose.yml` + `Dockerfile` backend
     - Service `postgres` dùng image PostGIS, service `redis`, service `api`
     - Biến môi trường kết nối PG/Redis/R2, volume bền vững cho Postgres
     - _Requirements: 7.3, 7.4_
 
-  - [ ] 2.2 Cấu hình PM2 cluster (`ecosystem.config.js`)
+  - [x] 2.2 Cấu hình PM2 cluster (`ecosystem.config.js`)
     - Chạy nhiều instance NestJS (cluster mode), app tier stateless (phiên/denylist ở Redis)
     - _Requirements: 1.6_
 
-  - [ ] 2.3 Cấu hình Nginx TLS + script reverse proxy
+  - [x] 2.3 Cấu hình Nginx TLS + script reverse proxy
     - TLS termination, redirect HTTP→HTTPS, bật HSTS, proxy tới cluster PM2
     - _Requirements: 10.5_
 

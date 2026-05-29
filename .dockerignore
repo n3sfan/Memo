@@ -1,0 +1,13 @@
+.git
+.gitignore
+.kiro
+docs
+node_modules
+apps/api/dist
+apps/mobile/build
+.dart_tool
+coverage
+.env
+.env.*
+!.env.example
+pnpm-debug.log*
