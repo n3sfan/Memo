@@ -5,7 +5,10 @@ WORKDIR /app
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV PNPM_HOME=/pnpm
 ENV PATH="${PNPM_HOME}:${PATH}"
-RUN corepack enable
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends ca-certificates openssl \
+  && rm -rf /var/lib/apt/lists/* \
+  && corepack enable
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

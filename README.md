@@ -51,6 +51,7 @@ Với chạy local Docker, tối thiểu cần điền:
 POSTGRES_DB=memory_map
 POSTGRES_USER=memory_map
 POSTGRES_PASSWORD=<mat-khau-random>
+DATABASE_URL=postgresql://memory_map:<mat-khau-random>@127.0.0.1:5432/memory_map?schema=public
 JWT_ACCESS_SECRET=<secret-random>
 JWT_REFRESH_SECRET=<secret-random-khac>
 ```
@@ -133,9 +134,20 @@ Các lệnh backend hiện có:
 
 ```powershell
 pnpm install
+pnpm api:prisma:validate
+pnpm api:prisma:generate
+pnpm api:db:deploy
 pnpm api:build
 pnpm api:test
 pnpm api:test:property
+```
+
+Nếu bạn đã từng chạy Postgres Docker rồi sau đó đổi `POSTGRES_PASSWORD`, volume cũ vẫn giữ password lúc khởi tạo lần đầu. Với DB dev local có thể reset sạch bằng:
+
+```powershell
+docker compose down -v
+docker compose up -d postgres redis
+pnpm api:db:deploy
 ```
 
 ## Mobile Flutter
@@ -189,10 +201,8 @@ TLS mặc định dùng Let's Encrypt/Certbot path:
 
 ## Task Tiếp Theo
 
-Task tiếp theo theo spec là task 3:
+Task tiếp theo theo spec là task 4:
 
-- Định nghĩa Prisma schema.
-- Bật PostGIS trong migration.
-- Tạo index không gian và ràng buộc dữ liệu.
+- Auth OAuth, JWT, refresh/logout và AuthGuard.
 
-Sau task 3, API mới bắt đầu có database contract thật để các module nghiệp vụ dùng.
+Sau task 3, API đã có database contract nền để các module Auth, Pins, Maps, Media, Sharing và Account dùng.

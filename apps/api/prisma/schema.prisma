@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String       @id @default(uuid()) @db.Uuid
+  provider       String       @db.Text
+  providerUserId String       @map("provider_user_id") @db.Text
+  email          String?      @db.Text
+  displayName    String?      @map("display_name") @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt      DateTime?    @map("deleted_at") @db.Timestamptz(6)
+  ownedMaps      MemoryMap[]  @relation("MapOwner")
+  mapMemberships MapMember[]
+  pins           Pin[]        @relation("PinCreator")
+  invitations    Invitation[] @relation("InvitationCreator")
+  shareLinks     ShareLink[]  @relation("ShareLinkCreator")
+
+  @@unique([provider, providerUserId], map: "users_provider_provider_user_id_key")
+  @@map("users")
+}
+
+model MemoryMap {
+  id          String       @id @default(uuid()) @db.Uuid
+  type        String       @db.Text
+  ownerId     String       @map("owner_id") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  owner       User         @relation("MapOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     MapMember[]
+  pins        Pin[]
+  invitations Invitation[]
+
+  @@map("maps")
+}
+
+model MapMember {
+  mapId    String    @map("map_id") @db.Uuid
+  userId   String    @map("user_id") @db.Uuid
+  role     String    @db.Text
+  joinedAt DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
+  map      MemoryMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([mapId, userId])
+  @@map("map_members")
+}
+
+model Pin {
+  id         String       @id @default(uuid()) @db.Uuid
+  mapId      String       @map("map_id") @db.Uuid
+  createdBy  String       @map("created_by") @db.Uuid
+  title      String?      @db.Text
+  note       String?      @db.Text
+  memoryDate DateTime?    @map("memory_date") @db.Timestamptz(6)
+  lat        Float
+  lng        Float
+  geom       Unsupported("geometry(Point, 4326)")
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  map        MemoryMap    @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  creator    User         @relation("PinCreator", fields: [createdBy], references: [id])
+  media      MediaFile[]
+  shareLinks ShareLink[]
+
+  @@index([mapId, memoryDate(sort: Desc)], map: "idx_pins_map_memory")
+  @@map("pins")
+}
+
+model MediaFile {
+  id        String   @id @default(uuid()) @db.Uuid
+  pinId     String   @map("pin_id") @db.Uuid
+  type      String   @db.Text
+  objectKey String   @map("object_key") @db.Text
+  mime      String?  @db.Text
+  sizeBytes BigInt?  @map("size_bytes") @db.BigInt
+  status    String   @default("pending") @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  pin       Pin      @relation(fields: [pinId], references: [id], onDelete: Cascade)
+
+  @@map("media_files")
+}
+
+model Invitation {
+  id        String    @id @default(uuid()) @db.Uuid
+  mapId     String    @map("map_id") @db.Uuid
+  createdBy String    @map("created_by") @db.Uuid
+  code      String    @unique(map: "invitations_code_key") @db.Text
+  status    String    @default("pending") @db.Text
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  map       MemoryMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  creator   User      @relation("InvitationCreator", fields: [createdBy], references: [id])
+
+  @@map("invitations")
+}
+
+model ShareLink {
+  id        String   @id @default(uuid()) @db.Uuid
+  pinId     String   @map("pin_id") @db.Uuid
+  createdBy String   @map("created_by") @db.Uuid
+  token     String   @unique(map: "share_links_token_key") @db.Text
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  pin       Pin      @relation(fields: [pinId], references: [id], onDelete: Cascade)
+  creator   User     @relation("ShareLinkCreator", fields: [createdBy], references: [id])
+
+  @@map("share_links")
+}

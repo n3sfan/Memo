@@ -44,22 +44,22 @@ Kế hoạch này chuyển thiết kế MVP thành chuỗi coding task tăng d�
     - TLS termination, redirect HTTP→HTTPS, bật HSTS, proxy tới cluster PM2
     - _Requirements: 10.5_
 
-- [ ] 3. Schema cơ sở dữ liệu và migration (Prisma + PostGIS)
-  - [ ] 3.1 Định nghĩa Prisma schema + client (`infra/prisma`)
+- [x] 3. Schema cơ sở dữ liệu và migration (Prisma + PostGIS)
+  - [x] 3.1 Định nghĩa Prisma schema + client (`infra/prisma`)
     - Models: `users`, `maps`, `map_members`, `pins` (lat/lng + `geom Unsupported("geometry(Point,4326)")`), `media_files`, `invitations`, `share_links`
     - Sinh migration baseline
     - _Requirements: 2.1, 3.3, 4.1, 6.1, 10.2_
 
-  - [ ] 3.2 Bổ sung migration SQL cho PostGIS và ràng buộc tọa độ
+  - [x] 3.2 Bổ sung migration SQL cho PostGIS và ràng buộc tọa độ
     - `CREATE EXTENSION postgis`; cột `geom geometry(Point,4326) NOT NULL`
     - `CHECK (lat BETWEEN -90 AND 90)`, `CHECK (lng BETWEEN -180 AND 180)`; CHECK enum `type`/`role`/`status`
     - _Requirements: 2.3, 3.4_
 
-  - [ ] 3.3 Bổ sung migration SQL cho các chỉ mục
+  - [x] 3.3 Bổ sung migration SQL cho các chỉ mục
     - GiST `idx_pins_geom`; `idx_pins_map_memory (map_id, memory_date DESC)`; partial unique `uniq_pending_invitation ON invitations(map_id) WHERE status='pending'`
     - _Requirements: 7.3, 8.1, 4.3_
 
-  - [ ]* 3.4 Static check schema không lưu nhị phân media
+  - [x]* 3.4 Static check schema không lưu nhị phân media
     - Kiểm tra không có cột `bytea`/`blob` cho media; `media_files` chỉ có `object_key` + metadata
     - _Requirements: 3.4_
 

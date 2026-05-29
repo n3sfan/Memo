@@ -6,6 +6,10 @@
   "packageManager": "pnpm@10.33.2",
   "scripts": {
     "api:build": "pnpm --filter @memory-map/api build",
+    "api:db:deploy": "pnpm --filter @memory-map/api db:deploy",
+    "api:db:dev": "pnpm --filter @memory-map/api db:dev",
+    "api:prisma:generate": "pnpm --filter @memory-map/api prisma:generate",
+    "api:prisma:validate": "pnpm --filter @memory-map/api prisma:validate",
     "api:start": "pnpm --filter @memory-map/api start",
     "api:start:dev": "pnpm --filter @memory-map/api start:dev",
     "api:test": "pnpm --filter @memory-map/api test",
@@ -14,5 +18,10 @@
   "engines": {
     "node": ">=20.11.0",
     "pnpm": ">=10.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@hono/node-server": "1.19.13"
+    }
   }
 }
