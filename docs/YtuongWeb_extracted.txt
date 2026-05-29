@@ -1,0 +1,31 @@
+﻿
+Ý Tưởng Dự Án: "Bản Đồ Kỷ Niệm" - Nơi Mọi Hành Trình Được Kể Lại
+1. Tầm Nhìn & Vấn Đề Cần Giải Quyết
+Mỗi ngày, chúng ta tạo ra vô vàn kỷ niệm, nhưng chúng thường bị phân mảnh: vài tấm ảnh trên điện thoại, vài dòng trạng thái trên mạng xã hội, và phần lớn còn lại chỉ nằm trong trí nhớ. Chúng ta thiếu một không gian tập trung, riêng tư và đầy cảm xúc để kết nối những ký ức đó lại với nhau và với nơi chốn mà chúng thuộc về.
+"Bản Đồ Kỷ Niệm" được tạo ra để trở thành "ngôi nhà" cho những ký ức đó. Tầm nhìn của dự án là xây dựng một nền tảng, nơi mỗi cá nhân, mỗi cặp đôi, mỗi nhóm bạn thân có thể cùng nhau vẽ nên tấm bản đồ hành trình độc nhất của riêng mình. Đây không phải là nơi để khoe khoang, mà là nơi để trân trọng, hồi tưởng và kết nối.
+2. Ý Tưởng Cốt Lõi: Một "Bản Đồ Xã Hội" Về Ký Ức
+"Bản Đồ Kỷ Niệm" là một ứng dụng di động cho phép người dùng ghim những kỷ niệm đa phương tiện (ảnh, video, ghi âm, ghi chú) lên một bản đồ tương tác. Nó hoạt động như một cuốn nhật ký sống động, nơi mỗi tọa độ không chỉ là một vị trí địa lý, mà là một chương trong câu chuyện cuộc đời của bạn và những người bạn thương yêu.
+3. Đối Tượng Người Dùng
+Ứng dụng hướng đến bất kỳ ai muốn lưu giữ và chia sẻ những khoảnh khắc cuộc sống một cách sâu sắc và riêng tư:
+Cá nhân: Những người muốn có một không gian riêng để ghi lại hành trình trưởng thành, những chuyến đi, những cột mốc cá nhân.
+Cặp đôi: Cùng nhau xây dựng bản đồ tình yêu, từ buổi hẹn hò đầu tiên đến những chuyến du lịch chung.
+Nhóm bạn thân & Gia đình: Tạo một không gian chung để lưu giữ những kỷ niệm không thể nào quên, đảm bảo không một ai bị lãng quên.
+4. Các Tính Năng Chính (Tập trung vào Kỷ niệm)
+Trọng tâm của ứng dụng sẽ xoay quanh các tính năng sau:
+Bản Đồ Kỷ Niệm Cá Nhân:
+Mỗi người dùng sẽ có một bản đồ riêng tư, là không gian cá nhân để ghim lại những dấu mốc và hành trình của riêng mình. Chỉ bạn mới có thể xem bản đồ này.
+Bản Đồ Kỷ Niệm Nhóm (Không gian chung):
+Người dùng có thể tạo ra các "Bản Đồ Nhóm" và mời bạn bè hoặc người thân tham gia.
+Tất cả thành viên trong nhóm đều có quyền xem và cùng nhau ghim kỷ niệm lên bản đồ chung này. Đây là tính năng hoàn hảo cho các chuyến đi của cả nhóm, các dự án chung, hoặc đơn giản là bản đồ kỷ niệm của một gia đình.
+Chia Sẻ Một Khoảnh Khắc:
+Thay vì chia sẻ cả một bản đồ, người dùng có thể chọn một "ghim" kỷ niệm cụ thể (ví dụ: kỷ niệm ở một quán cà phê) và gửi nó cho một người bạn qua các ứng dụng khác. Người nhận sẽ thấy được nội dung kỷ niệm đó cùng với vị trí của nó trên bản đồ. Nó giống như gửi đi một tấm bưu thiếp kỹ thuật số đầy ý nghĩa.
+Nội Dung Đa Dạng:
+Mỗi ghim kỷ niệm là một câu chuyện trọn vẹn, cho phép đính kèm hình ảnh, video ngắn, file ghi âm và những dòng ghi chú chi tiết.
+"Dòng Thời Gian" Của Ký Ức:
+Bên cạnh việc xem kỷ niệm trên bản đồ, người dùng có thể chuyển sang chế độ xem "Dòng Thời Gian" để thấy tất cả các kỷ niệm được sắp xếp theo trình tự thời gian, giúp việc hồi tưởng trở nên dễ dàng hơn.
+5. Điểm Khác Biệt Tạo Nên Giá Trị
+Sâu Sắc & Riêng Tư: Đây không phải là một mạng xã hội ồn ào. Chúng ta tạo ra một không gian an toàn, nơi người dùng có thể lưu giữ những khoảnh khắc chân thật nhất mà không phải lo lắng về sự phán xét.
+Kể Chuyện Bằng Bản Đồ: Chúng ta mang đến một cách thức kể chuyện hoàn toàn mới. Thay vì cuộn trang, người dùng sẽ "du hành" trên chính bản đồ cuộc đời mình.
+Cùng Nhau Tạo Nên Ký Ức: Tính năng bản đồ nhóm biến việc lưu giữ kỷ niệm từ một hoạt động cá nhân thành một trải nghiệm kết nối tập thể đầy gắn bó.
+Lời kết: Bằng việc tập trung vào chiều sâu cảm xúc, "Bản Đồ Kỷ Niệm" sẽ trở thành một ứng dụng không thể thiếu, một "kho báu số" giúp mọi người trân trọng hơn những hành trình đã qua và những mối quan hệ mà họ đang có.
+
