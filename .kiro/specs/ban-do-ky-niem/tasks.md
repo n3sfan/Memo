@@ -17,14 +17,14 @@ Kế hoạch này chuyển thiết kế MVP thành chuỗi coding task tăng d�
 
 ## Tasks
 
-- [ ] 1. Khởi tạo monorepo và skeleton hai ứng dụng (apps/api + apps/mobile)
-  - [ ] 1.1 Tạo cấu trúc monorepo và backend skeleton (NestJS)
+- [x] 1. Khởi tạo monorepo và skeleton hai ứng dụng (apps/api + apps/mobile)
+  - [x] 1.1 Tạo cấu trúc monorepo và backend skeleton (NestJS)
     - Tạo `apps/api` với cấu trúc `src/{common,modules,infra,domain}`, `test/{unit,property,integration}` theo design "Cấu trúc Project"
     - Khởi tạo NestJS (`main.ts`, `app.module.ts`) ở mức skeleton, prefix `/api/v1`
     - Cấu hình test framework backend: Jest + **fast-check** (devDependency), script `test`/`test:property`
     - _Requirements: 1.1, 2.1_
 
-  - [ ] 1.2 Tạo mobile skeleton (Flutter)
+  - [x] 1.2 Tạo mobile skeleton (Flutter)
     - Tạo `apps/mobile` với cấu trúc `lib/{app,data,sync,media,auth,l10n}`, `test/{unit,property}`
     - Khai báo dependencies trong `pubspec.yaml`: `flutter_map`/`mapbox_maps_flutter`, `drift`, `sqflite`, `shared_preferences`, `connectivity_plus`, `workmanager`, `flutter_image_compress`, `record`, `image_picker`, `dio`, `go_router`, `flutter_riverpod` (hoặc `flutter_bloc`), `intl`, `flutter_localizations`, `glados` (dev)
     - Cấu hình `analysis_options.yaml` (flutter_lints) và test framework `flutter test` + **glados**

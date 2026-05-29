@@ -1,0 +1,20 @@
+{
+  "name": "memory-map",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Memory Map monorepo",
+  "workspaces": [
+    "apps/api"
+  ],
+  "scripts": {
+    "api:build": "npm --workspace apps/api run build",
+    "api:start": "npm --workspace apps/api run start",
+    "api:start:dev": "npm --workspace apps/api run start:dev",
+    "api:test": "npm --workspace apps/api run test",
+    "api:test:property": "npm --workspace apps/api run test:property"
+  },
+  "engines": {
+    "node": ">=20.11.0",
+    "npm": ">=10.0.0"
+  }
+}

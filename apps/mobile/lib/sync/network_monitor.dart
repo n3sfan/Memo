@@ -1,0 +1,3 @@
+class NetworkMonitor {
+  const NetworkMonitor();
+}

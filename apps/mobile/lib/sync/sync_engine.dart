@@ -1,0 +1,3 @@
+class SyncEngine {
+  const SyncEngine();
+}
