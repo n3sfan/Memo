@@ -1,35 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import {
   throwForbidden,
   throwNotFound,
 } from '../../common/api-error';
-import { PrismaService } from '../../infra/prisma';
 import { CurrentUser } from '../auth/current-user';
 import {
   ResourceAccessDto,
   ResourceAccessRole,
 } from './dto/authorization.dto';
-
-interface ResourcePermission {
-  exists: boolean;
-  allowed: boolean;
-  role?: ResourceAccessRole;
-}
-
-interface MapAccessRecord {
-  id: string;
-  ownerId: string;
-  type: string;
-  members: Array<{
-    userId: string;
-    role: string;
-  }>;
-}
+import {
+  ACCESS_CONTROL_REPOSITORY,
+  AccessControlRepository,
+  MapAccessRecord,
+} from './repositories';
 
 @Injectable()
 export class AuthorizationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(ACCESS_CONTROL_REPOSITORY)
+    private readonly accessRepository: AccessControlRepository,
+  ) {}
 
   async resolveMapAccess(
     user: CurrentUser,
@@ -46,12 +37,8 @@ export class AuthorizationService {
   }
 
   async resolveShareLinkAccess(token: string): Promise<ResourceAccessDto> {
-    const shareLink = await this.prisma.shareLink.findUnique({
-      where: { token },
-      select: {
-        revoked: true,
-      },
-    });
+    const shareLink =
+      await this.accessRepository.findShareLinkAccessRecord(token);
 
     return {
       allowed: Boolean(shareLink && !shareLink.revoked),
@@ -93,14 +80,8 @@ export class AuthorizationService {
     userId: string,
     invitationId: string,
   ): Promise<boolean> {
-    const invitation = await this.prisma.invitation.findUnique({
-      where: { id: invitationId },
-      select: {
-        map: {
-          select: this.mapAccessSelect(),
-        },
-      },
-    });
+    const invitation =
+      await this.accessRepository.findInvitationAccessRecord(invitationId);
 
     if (!invitation) {
       return false;
@@ -160,10 +141,7 @@ export class AuthorizationService {
     userId: string,
     mapId: string,
   ): Promise<ResourcePermission> {
-    const map = await this.prisma.memoryMap.findUnique({
-      where: { id: mapId },
-      select: this.mapAccessSelect(),
-    });
+    const map = await this.accessRepository.findMapAccessRecord(mapId);
 
     if (!map) {
       return {
@@ -179,14 +157,7 @@ export class AuthorizationService {
     userId: string,
     pinId: string,
   ): Promise<ResourcePermission> {
-    const pin = await this.prisma.pin.findUnique({
-      where: { id: pinId },
-      select: {
-        map: {
-          select: this.mapAccessSelect(),
-        },
-      },
-    });
+    const pin = await this.accessRepository.findPinAccessRecord(pinId);
 
     if (!pin) {
       return {
@@ -253,28 +224,10 @@ export class AuthorizationService {
       role: permission.role,
     };
   }
+}
 
-  private mapAccessSelect(): {
-    id: true;
-    ownerId: true;
-    type: true;
-    members: {
-      select: {
-        userId: true;
-        role: true;
-      };
-    };
-  } {
-    return {
-      id: true,
-      ownerId: true,
-      type: true,
-      members: {
-        select: {
-          userId: true,
-          role: true,
-        },
-      },
-    };
-  }
+interface ResourcePermission {
+  exists: boolean;
+  allowed: boolean;
+  role?: ResourceAccessRole;
 }
