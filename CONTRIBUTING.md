@@ -41,8 +41,14 @@ account, api, auth, ci, contract, db, deps, docs, duo, github, infra, maps,
 media, mobile, pins, repo, share, timeline
 ```
 
-The scope is optional for PR titles, but local commit hooks validate it when it
-is present.
+Scopes are optional and are not restricted to this list. Use a clear free-form
+scope when a change naturally belongs somewhere else, for example:
+
+```text
+feat(notification): add reminder preferences
+fix(upload): handle large images
+chore(jira): update sprint workflow
+```
 
 ## Local Setup
 
