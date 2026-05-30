@@ -13,7 +13,9 @@
     "api:start": "pnpm --filter @memory-map/api start",
     "api:start:dev": "pnpm --filter @memory-map/api start:dev",
     "api:test": "pnpm --filter @memory-map/api test",
-    "api:test:property": "pnpm --filter @memory-map/api test:property"
+    "api:test:property": "pnpm --filter @memory-map/api test:property",
+    "commitlint:last": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=20.11.0",
@@ -23,5 +25,10 @@
     "overrides": {
       "@hono/node-server": "1.19.13"
     }
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "husky": "^9.1.7"
   }
 }
