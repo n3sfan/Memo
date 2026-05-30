@@ -249,3 +249,27 @@ the implementation with `flutter_secure_storage` without changing repositories o
 Offline-created pins should include `clientId`. Mobile generates this with the
 local helper in `data/client_id.dart`; no external UUID package is required for
 the Sprint 1 foundation.
+
+## Contract Smoke Tests
+
+Backend contract smoke tests live in:
+
+```text
+apps/api/test/integration/api-contract-smoke.spec.ts
+```
+
+Run them directly with:
+
+```bash
+pnpm api:test:contract
+```
+
+The CI `API` job runs these smoke tests as a required gate. They cover:
+
+- Success envelope shape: `{ data, requestId }`.
+- Error envelope shape: `{ error, message, details, requestId }`.
+- Protected routes returning `401 unauthorized` before feature logic.
+- Skeleton protected routes returning `501 not_implemented` only after a valid
+  bearer token passes the guard.
+- Server-generated `requestId` fallback when clients do not send
+  `x-request-id`.
