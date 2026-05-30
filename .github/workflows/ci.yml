@@ -33,6 +33,9 @@ jobs:
       - name: Test API
         run: pnpm api:test
 
+      - name: Smoke API Contract
+        run: pnpm api:test:contract
+
   Mobile:
     runs-on: ubuntu-latest
 
