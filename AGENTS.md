@@ -99,9 +99,9 @@ Mobile UI should not call HTTP directly. Use:
 ApiClient -> Repository -> Provider -> UI
 ```
 
-Map provider is not locked. The repo currently has dependencies that support
-both OpenStreetMap-style maps and Mapbox, so keep map code behind
-`apps/mobile/lib/map` ports/adapters.
+Map provider is not locked. Keep map code behind `apps/mobile/lib/map`
+ports/adapters, and add concrete provider packages only inside the adapter task
+that needs them.
 
 ## Backend Notes
 

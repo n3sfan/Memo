@@ -150,8 +150,8 @@ Mobile:
 - Local cache with SQLite/sqflite or drift direction.
 - `workmanager` for background retry.
 - `flutter_image_compress`, `image_picker` and `record` for media.
-- Map provider is not locked: Mapbox and OpenStreetMap-style implementations
-  must stay behind project-owned map ports.
+- Map provider is not locked: concrete Mapbox, OpenStreetMap-style or other
+  implementations must stay behind project-owned map ports.
 
 Testing:
 
