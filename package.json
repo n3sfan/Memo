@@ -5,6 +5,7 @@
   "description": "Memory Map monorepo",
   "packageManager": "pnpm@10.33.2",
   "scripts": {
+    "dev": "pnpm --filter @memory-map/api dev",
     "api:build": "pnpm --filter @memory-map/api build",
     "api:db:deploy": "pnpm --filter @memory-map/api db:deploy",
     "api:db:dev": "pnpm --filter @memory-map/api db:dev",
