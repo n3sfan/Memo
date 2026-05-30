@@ -1,0 +1,45 @@
+const allowedScopes = [
+  'account',
+  'api',
+  'auth',
+  'ci',
+  'contract',
+  'db',
+  'deps',
+  'docs',
+  'duo',
+  'github',
+  'infra',
+  'maps',
+  'media',
+  'mobile',
+  'pins',
+  'repo',
+  'share',
+  'timeline',
+];
+
+module.exports = {
+  extends: ['@commitlint/config-conventional'],
+  rules: {
+    'scope-enum': [2, 'always', allowedScopes],
+    'subject-case': [0],
+    'type-enum': [
+      2,
+      'always',
+      [
+        'build',
+        'chore',
+        'ci',
+        'docs',
+        'feat',
+        'fix',
+        'perf',
+        'refactor',
+        'revert',
+        'style',
+        'test',
+      ],
+    ],
+  },
+};

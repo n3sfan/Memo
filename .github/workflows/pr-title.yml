@@ -1,0 +1,34 @@
+name: PR Title
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - edited
+      - reopened
+      - ready_for_review
+      - synchronize
+
+jobs:
+  pr-title:
+    name: PR Title
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?!?: .+'
+
+          if [[ ! "$PR_TITLE" =~ $pattern ]]; then
+            echo "Invalid PR title: $PR_TITLE"
+            echo ""
+            echo "Use Conventional Commits format:"
+            echo "  feat(api): add jwt auth guard"
+            echo "  fix(mobile): handle expired session"
+            echo "  docs(contract): document auth errors"
+            exit 1
+          fi
