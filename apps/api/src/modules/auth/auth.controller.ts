@@ -1,0 +1,59 @@
+import { Body, Controller, Headers, Param, Post } from '@nestjs/common';
+
+import { ApiEnvelope, createEnvelope } from '../../common/api-envelope';
+import {
+  LogoutResponseDto,
+  OAuthCallbackRequestDto,
+  OAuthProvider,
+  OAuthStartRequestDto,
+  OAuthStartResponseDto,
+  RefreshSessionRequestDto,
+  SessionResponseDto,
+} from './dto/auth.dto';
+import { AuthService } from './auth.service';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('oauth/:provider/start')
+  async startOAuth(
+    @Param('provider') provider: OAuthProvider,
+    @Body() request: OAuthStartRequestDto,
+    @Headers('x-request-id') requestId?: string,
+  ): Promise<ApiEnvelope<OAuthStartResponseDto>> {
+    const data = await this.authService.startOAuth(provider, request);
+
+    return createEnvelope(data, requestId);
+  }
+
+  @Post('oauth/:provider/callback')
+  async completeOAuth(
+    @Param('provider') provider: OAuthProvider,
+    @Body() request: OAuthCallbackRequestDto,
+    @Headers('x-request-id') requestId?: string,
+  ): Promise<ApiEnvelope<SessionResponseDto>> {
+    const data = await this.authService.completeOAuth(provider, request);
+
+    return createEnvelope(data, requestId);
+  }
+
+  @Post('refresh')
+  async refreshSession(
+    @Body() request: RefreshSessionRequestDto,
+    @Headers('x-request-id') requestId?: string,
+  ): Promise<ApiEnvelope<SessionResponseDto>> {
+    const data = await this.authService.refreshSession(request);
+
+    return createEnvelope(data, requestId);
+  }
+
+  @Post('logout')
+  async logout(
+    @Headers('x-request-id') requestId?: string,
+  ): Promise<ApiEnvelope<LogoutResponseDto>> {
+    const data = await this.authService.logout();
+
+    return createEnvelope(data, requestId);
+  }
+}
