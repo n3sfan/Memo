@@ -51,12 +51,27 @@ Common MVP error codes:
 - `oauth_failed`
 - `unauthorized`
 - `forbidden`
+- `not_found`
 - `validation_error`
+- `conflict`
+- `internal_error`
 - `payload_too_large`
+- `not_implemented`
 - `invitation_pending_exists`
 - `invalid_invitation`
 - `map_full`
 - `link_revoked`
+
+Status conventions:
+
+- `401 unauthorized`: missing, malformed, invalid or expired bearer token.
+- `403 forbidden`: authenticated user is known, the resource exists, but the
+  user is not allowed to perform the action.
+- `404 not_found`: resource does not exist, or the API intentionally hides
+  private resource existence from unauthorized users.
+- `409 conflict`: request is valid but conflicts with an existing state.
+- `500 internal_error`: unexpected server failure. The message must not leak
+  credentials, tokens, connection strings or internal stack traces.
 
 ## Auth
 
@@ -81,6 +96,21 @@ Protected mobile requests attach:
 ```http
 Authorization: Bearer <accessToken>
 ```
+
+Protected endpoints must reject unauthenticated requests before reaching feature
+logic. Skeleton endpoints may still return `501 not_implemented` after a valid
+token passes the guard.
+
+## Authorization Model
+
+- Personal maps are accessible only by the owner.
+- Duo maps are readable by the owner and accepted map members.
+- Only the map owner can modify map-level settings, invitations and members.
+- The owner and accepted duo members can create pins on a readable map.
+- Pin read/write access is resolved through the parent map.
+- Media upload access is resolved through the parent pin.
+- Account export/delete access is self-only.
+- Public share-link access is resolved by a non-revoked share token.
 
 ## Pins
 
