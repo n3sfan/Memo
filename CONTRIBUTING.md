@@ -1,5 +1,7 @@
 # Contributing
 
+For AI agents or teammates joining the project, start with `AGENTS.md`.
+
 ## Commit And PR Title Convention
 
 Use Conventional Commits for local commits and pull request titles:
@@ -73,3 +75,10 @@ Use squash merge into `main`. The squash commit title comes from the PR title,
 so the PR title must also follow Conventional Commits.
 
 The `PR Title` GitHub Actions check validates this format on every pull request.
+
+## Architecture
+
+Follow the provider abstraction rules in `docs/architecture-guidelines.md`.
+Feature code should depend on project-owned ports/interfaces, not concrete
+third-party providers such as Mapbox, OpenStreetMap, R2, Google OAuth, Apple
+OAuth, Prisma or Redis.

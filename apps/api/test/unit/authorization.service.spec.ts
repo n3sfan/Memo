@@ -1,20 +1,20 @@
 import { HttpStatus } from '@nestjs/common';
 
 import { ApiException } from '../../src/common/api-error';
-import { PrismaService } from '../../src/infra/prisma';
 import { AuthorizationService } from '../../src/modules/authorization/authorization.service';
+import { AccessControlRepository } from '../../src/modules/authorization/repositories';
 
 describe('AuthorizationService', () => {
-  let prisma: MockPrismaService;
+  let accessRepository: jest.Mocked<AccessControlRepository>;
   let service: AuthorizationService;
 
   beforeEach(() => {
-    prisma = createMockPrisma();
-    service = new AuthorizationService(prisma as unknown as PrismaService);
+    accessRepository = createMockAccessRepository();
+    service = new AuthorizationService(accessRepository);
   });
 
   it('allows a map owner to read and write the map', async () => {
-    prisma.memoryMap.findUnique.mockResolvedValue(
+    accessRepository.findMapAccessRecord.mockResolvedValue(
       mapRecord({
         ownerId: 'user-1',
       }),
@@ -25,7 +25,7 @@ describe('AuthorizationService', () => {
   });
 
   it('allows a duo member to read a map and create pins without map ownership', async () => {
-    prisma.memoryMap.findUnique.mockResolvedValue(
+    accessRepository.findMapAccessRecord.mockResolvedValue(
       mapRecord({
         type: 'duo',
         ownerId: 'owner-1',
@@ -44,7 +44,7 @@ describe('AuthorizationService', () => {
   });
 
   it('throws forbidden when a map exists but the user is not a member', async () => {
-    prisma.memoryMap.findUnique.mockResolvedValue(
+    accessRepository.findMapAccessRecord.mockResolvedValue(
       mapRecord({
         ownerId: 'owner-1',
       }),
@@ -58,7 +58,7 @@ describe('AuthorizationService', () => {
   });
 
   it('checks pin access through the parent map', async () => {
-    prisma.pin.findUnique.mockResolvedValue({
+    accessRepository.findPinAccessRecord.mockResolvedValue({
       map: mapRecord({
         ownerId: 'user-1',
       }),
@@ -69,7 +69,7 @@ describe('AuthorizationService', () => {
   });
 
   it('hides missing or inaccessible pins as not_found', async () => {
-    prisma.pin.findUnique.mockResolvedValue(null);
+    accessRepository.findPinAccessRecord.mockResolvedValue(null);
 
     await expectApiException(
       service.assertCanReadPin('user-1', 'pin-1'),
@@ -85,7 +85,7 @@ describe('AuthorizationService', () => {
   });
 
   it('resolves only active share links', async () => {
-    prisma.shareLink.findUnique.mockResolvedValue({
+    accessRepository.findShareLinkAccessRecord.mockResolvedValue({
       revoked: false,
     });
 
@@ -98,35 +98,12 @@ describe('AuthorizationService', () => {
   });
 });
 
-interface MockPrismaService {
-  memoryMap: {
-    findUnique: jest.Mock;
-  };
-  pin: {
-    findUnique: jest.Mock;
-  };
-  invitation: {
-    findUnique: jest.Mock;
-  };
-  shareLink: {
-    findUnique: jest.Mock;
-  };
-}
-
-function createMockPrisma(): MockPrismaService {
+function createMockAccessRepository(): jest.Mocked<AccessControlRepository> {
   return {
-    memoryMap: {
-      findUnique: jest.fn(),
-    },
-    pin: {
-      findUnique: jest.fn(),
-    },
-    invitation: {
-      findUnique: jest.fn(),
-    },
-    shareLink: {
-      findUnique: jest.fn(),
-    },
+    findMapAccessRecord: jest.fn(),
+    findPinAccessRecord: jest.fn(),
+    findInvitationAccessRecord: jest.fn(),
+    findShareLinkAccessRecord: jest.fn(),
   };
 }
 
