@@ -47,3 +47,8 @@ final upload = await ref.read(mediaRepositoryProvider).createPresignedUpload(
 The default provider mode is mock data. Feature owners can build Map View, Pin
 Editor and Timeline before backend APIs are ready. To use the real backend, run
 with `--dart-define=USE_MOCK_DATA=false`.
+
+Map View should depend on `mapViewControllerProvider` and the project-owned map
+port in `apps/mobile/lib/map`. UI code must not import concrete map SDK
+packages directly; provider-specific code belongs in an adapter such as
+`flutter_map_adapter.dart`.

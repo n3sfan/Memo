@@ -137,6 +137,14 @@ List by bbox:
 GET /api/v1/maps/:mapId/pins?bbox=minLng,minLat,maxLng,maxLat
 ```
 
+`bbox` is required and is parsed as four finite numbers:
+
+- `minLng` and `maxLng` must be between `-180` and `180`.
+- `minLat` and `maxLat` must be between `-90` and `90`.
+- `minLng` must be less than `maxLng`.
+- `minLat` must be less than `maxLat`.
+- Invalid or missing bbox returns `422 validation_error`.
+
 Response:
 
 ```json
@@ -341,6 +349,18 @@ or parent pin exists but the authenticated user cannot access it, the API return
 ```http
 GET /api/v1/maps/:mapId/timeline?order=desc&cursor=&limit=50
 ```
+
+Timeline pagination uses opaque keyset cursors. The backend orders by
+`memoryDate` and then `id` as the stable tie-breaker. Pins without
+`memoryDate` are returned last for both ascending and descending order.
+
+Query parameters:
+
+- `order`: `desc` by default. Accepted values are `asc` and `desc`.
+- `limit`: `50` by default. Accepted range is `1` to `100`.
+- `cursor`: opaque base64url cursor returned by the previous page.
+
+Invalid `order`, `limit` or `cursor` returns `422 validation_error`.
 
 Response:
 
