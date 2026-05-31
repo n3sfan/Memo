@@ -1,6 +1,47 @@
 import { PrismaPinRepository } from '../../src/modules/pins/repositories/prisma-pin.repository';
 
 describe('PrismaPinRepository', () => {
+  it('queries viewport pins with a PostGIS envelope', async () => {
+    const prisma = createPrismaMock();
+    prisma.$queryRaw.mockResolvedValue([pinRow()]);
+    const repository = new PrismaPinRepository(prisma as never);
+
+    await expect(
+      repository.listPinsInBbox('3b013d64-5d61-42bd-9443-6b17e9ca98526', {
+        minLng: 106.6,
+        minLat: 10.7,
+        maxLng: 106.8,
+        maxLat: 10.8,
+      }),
+    ).resolves.toHaveLength(1);
+
+    const { sql, values } = rawSqlCall(prisma.$queryRaw);
+    expect(sql).toContain('ST_MakeEnvelope(');
+    expect(sql).toContain('p.geom &&');
+    expect(values).toEqual(
+      expect.arrayContaining([106.6, 10.7, 106.8, 10.8]),
+    );
+  });
+
+  it('queries timeline pages using stable NULLS LAST ordering', async () => {
+    const prisma = createPrismaMock();
+    prisma.$queryRaw.mockResolvedValue([pinRow()]);
+    const repository = new PrismaPinRepository(prisma as never);
+
+    await repository.listTimelinePage(
+      '3b013d64-5d61-42bd-9443-6b17e9ca98526',
+      {
+        order: 'desc',
+        limit: 51,
+      },
+    );
+
+    const { sql, values } = rawSqlCall(prisma.$queryRaw);
+    expect(sql).toContain('ORDER BY p.memory_date DESC NULLS LAST, p.id DESC');
+    expect(sql).toContain('LIMIT');
+    expect(values).toContain(51);
+  });
+
   it('creates a pin with a PostGIS point built from lng then lat', async () => {
     const prisma = createPrismaMock();
     prisma.$queryRaw.mockResolvedValue([

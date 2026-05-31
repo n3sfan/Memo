@@ -7,23 +7,39 @@ import { ApiExceptionFilter } from '../../src/common/api-exception.filter';
 import { JwtAuthGuard } from '../../src/modules/auth/jwt-auth.guard';
 import { MapsController } from '../../src/modules/maps/maps.controller';
 import { MapsService } from '../../src/modules/maps/maps.service';
+import { PinsController } from '../../src/modules/pins/pins.controller';
+import { PinsService } from '../../src/modules/pins/pins.service';
+import { TimelineController } from '../../src/modules/timeline/timeline.controller';
+import { TimelineService } from '../../src/modules/timeline/timeline.service';
 
 describe('API contract smoke tests', () => {
   let app: INestApplication;
   let jwtService: JwtService;
   let mapsService: jest.Mocked<MapsService>;
+  let pinsService: jest.Mocked<PinsService>;
+  let timelineService: jest.Mocked<TimelineService>;
 
   beforeEach(async () => {
     mapsService = createMapsServiceMock();
+    pinsService = createPinsServiceMock();
+    timelineService = createTimelineServiceMock();
 
     const moduleRef = await Test.createTestingModule({
-      controllers: [MapsController],
+      controllers: [MapsController, PinsController, TimelineController],
       providers: [
         JwtAuthGuard,
         JwtService,
         {
           provide: MapsService,
           useValue: mapsService,
+        },
+        {
+          provide: PinsService,
+          useValue: pinsService,
+        },
+        {
+          provide: TimelineService,
+          useValue: timelineService,
         },
       ],
     }).compile();
@@ -137,6 +153,48 @@ describe('API contract smoke tests', () => {
     });
   });
 
+  it('returns the standard envelope for bbox pin queries', async () => {
+    pinsService.listByBbox.mockResolvedValue({
+      pins: [],
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/maps/map_1/pins?bbox=106,10,109,12')
+      .set('authorization', `Bearer ${accessToken()}`)
+      .set('x-request-id', 'req_contract_bbox')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      data: {
+        pins: [],
+      },
+      requestId: 'req_contract_bbox',
+    });
+  });
+
+  it('returns the standard envelope for timeline queries', async () => {
+    timelineService.listTimeline.mockResolvedValue({
+      items: [],
+      nextCursor: null,
+      hasMore: false,
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/maps/map_1/timeline?order=desc&limit=50')
+      .set('authorization', `Bearer ${accessToken()}`)
+      .set('x-request-id', 'req_contract_timeline')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      data: {
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+      },
+      requestId: 'req_contract_timeline',
+    });
+  });
+
   function accessToken(): string {
     return jwtService.sign(
       {
@@ -162,4 +220,20 @@ function createMapsServiceMock(): jest.Mocked<MapsService> {
     acceptInvitation: jest.fn(),
     removeMember: jest.fn(),
   };
+}
+
+function createPinsServiceMock(): jest.Mocked<PinsService> {
+  return {
+    listByBbox: jest.fn(),
+    createPin: jest.fn(),
+    getPin: jest.fn(),
+    updatePin: jest.fn(),
+    deletePin: jest.fn(),
+  } as unknown as jest.Mocked<PinsService>;
+}
+
+function createTimelineServiceMock(): jest.Mocked<TimelineService> {
+  return {
+    listTimeline: jest.fn(),
+  } as unknown as jest.Mocked<TimelineService>;
 }
