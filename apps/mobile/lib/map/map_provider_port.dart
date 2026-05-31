@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 import '../data/models/coordinates.dart';
 
 enum MapProviderKind {
@@ -30,6 +32,27 @@ class MapMarkerModel {
   final Coordinates position;
   final bool selected;
 }
+
+class MapViewConfig {
+  const MapViewConfig({
+    required this.initialCamera,
+    required this.markers,
+    required this.onViewportChanged,
+    required this.onMarkerTap,
+    required this.onLongPress,
+  });
+
+  final MapCameraPosition initialCamera;
+  final List<MapMarkerModel> markers;
+  final ValueChanged<BboxQuery> onViewportChanged;
+  final ValueChanged<String> onMarkerTap;
+  final ValueChanged<Coordinates> onLongPress;
+}
+
+typedef MapViewWidgetBuilder = Widget Function(
+  BuildContext context,
+  MapViewConfig config,
+);
 
 abstract interface class MapViewportController {
   Stream<BboxQuery> get visibleBounds;
