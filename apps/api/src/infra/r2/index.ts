@@ -7,4 +7,4 @@ export {
   type PresignedUpload,
 } from './object-storage.port';
 export { R2ObjectStorageAdapter } from './r2-object-storage.adapter';
-export { StorageModule } from './storage.module';
+export { R2Module } from './r2.module';

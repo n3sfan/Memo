@@ -92,7 +92,7 @@ describe('AuthorizationService', () => {
     );
   });
 
-  it('keeps media upload access hidden when the pin map is inaccessible', async () => {
+  it('returns forbidden for media upload when the parent pin exists but is inaccessible', async () => {
     accessRepository.findPinAccessRecord.mockResolvedValue({
       map: mapRecord({
         ownerId: 'owner-1',
@@ -101,8 +101,22 @@ describe('AuthorizationService', () => {
 
     await expectApiException(
       service.assertCanUploadMedia('user-1', 'pin-1'),
-      HttpStatus.NOT_FOUND,
-      'not_found',
+      HttpStatus.FORBIDDEN,
+      'forbidden',
+    );
+  });
+
+  it('returns forbidden for media read when the parent pin exists but is inaccessible', async () => {
+    accessRepository.findPinAccessRecord.mockResolvedValue({
+      map: mapRecord({
+        ownerId: 'owner-1',
+      }),
+    });
+
+    await expectApiException(
+      service.assertCanReadMedia('user-1', 'pin-1'),
+      HttpStatus.FORBIDDEN,
+      'forbidden',
     );
   });
 

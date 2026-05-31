@@ -1,5 +1,7 @@
+export type MediaType = 'image' | 'text' | 'audio';
+
 export class PresignMediaRequestDto {
-  mediaType!: 'image' | 'text' | 'audio';
+  mediaType!: MediaType;
   mimeType!: string;
   sizeBytes!: number;
   fileName!: string;
@@ -12,7 +14,7 @@ export class PresignMediaResponseDto {
 }
 
 export class RegisterMediaRequestDto {
-  mediaType!: 'image' | 'text' | 'audio';
+  mediaType!: MediaType;
   objectKey!: string;
   mimeType!: string;
   sizeBytes!: number;
@@ -21,7 +23,7 @@ export class RegisterMediaRequestDto {
 export class MediaDto {
   id!: string;
   pinId!: string;
-  mediaType!: 'image' | 'text' | 'audio';
+  mediaType!: MediaType;
   objectKey!: string;
   mimeType!: string;
   sizeBytes!: number;

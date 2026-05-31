@@ -262,6 +262,80 @@ Response:
 }
 ```
 
+The backend validates `mediaType`, `mimeType` and `sizeBytes` before creating
+the presigned URL. Files larger than `MEDIA_MAX_BYTES` return:
+
+```json
+{
+  "error": "payload_too_large",
+  "message": "Media file exceeds the maximum allowed size.",
+  "details": {
+    "maxBytes": 10485760,
+    "sizeBytes": 10485761
+  },
+  "requestId": "req_..."
+}
+```
+
+The backend does not receive or proxy binary file bytes. The mobile client uploads
+the file directly to the returned `uploadUrl`, then registers the media metadata.
+
+Register uploaded media:
+
+```http
+POST /api/v1/pins/:pinId/media
+```
+
+Body:
+
+```json
+{
+  "mediaType": "image",
+  "objectKey": "pins/pin_123/...-photo.jpg",
+  "mimeType": "image/jpeg",
+  "sizeBytes": 1048576
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "media_123",
+    "pinId": "pin_123",
+    "mediaType": "image",
+    "objectKey": "pins/pin_123/...-photo.jpg",
+    "mimeType": "image/jpeg",
+    "sizeBytes": 1048576,
+    "createdAt": "2026-05-30T10:16:00.000Z"
+  },
+  "requestId": "req_..."
+}
+```
+
+Create authorized read URL:
+
+```http
+GET /api/v1/media/:mediaId/presign
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "url": "https://...",
+    "expiresAt": "2026-05-30T10:30:00.000Z"
+  },
+  "requestId": "req_..."
+}
+```
+
+Media upload and read access are authorized through the parent pin. If the media
+or parent pin exists but the authenticated user cannot access it, the API returns
+`403 forbidden`.
+
 ## Timeline
 
 ```http

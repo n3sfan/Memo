@@ -1,6 +1,6 @@
 export const OBJECT_STORAGE = Symbol('OBJECT_STORAGE');
 
-export type ObjectStorageMediaType = 'image' | 'audio';
+export type ObjectStorageMediaType = 'image' | 'audio' | 'text';
 
 export interface CreatePresignedUploadInput {
   mediaType: ObjectStorageMediaType;

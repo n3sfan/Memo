@@ -136,7 +136,19 @@ export class AuthorizationService {
   }
 
   async assertCanUploadMedia(userId: string, pinId: string): Promise<void> {
-    await this.assertCanWritePin(userId, pinId);
+    this.assertVisiblePermission(
+      await this.resolvePinPermission(userId, pinId),
+      'Pin not found.',
+      'You cannot upload media to this pin.',
+    );
+  }
+
+  async assertCanReadMedia(userId: string, pinId: string): Promise<void> {
+    this.assertVisiblePermission(
+      await this.resolvePinPermission(userId, pinId),
+      'Pin not found.',
+      'You cannot access this media.',
+    );
   }
 
   assertCanAccessAccount(userId: string, accountUserId: string): void {
@@ -227,6 +239,14 @@ export class AuthorizationService {
   }
 
   private assertWritePermission(
+    permission: ResourcePermission,
+    notFoundMessage: string,
+    forbiddenMessage: string,
+  ): void {
+    this.assertVisiblePermission(permission, notFoundMessage, forbiddenMessage);
+  }
+
+  private assertVisiblePermission(
     permission: ResourcePermission,
     notFoundMessage: string,
     forbiddenMessage: string,

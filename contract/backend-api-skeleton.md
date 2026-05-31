@@ -77,10 +77,21 @@ Files:
 - `POST /pins/:pinId/media`
 - `GET /media/:mediaId/presign`
 
+Implemented behavior:
+
+- Presigned PUT URLs are created through the R2/S3-compatible storage adapter.
+- Media bytes are uploaded directly by the client and never pass through the API.
+- Registered media rows store only metadata plus the object key.
+- Oversized media requests return `413 payload_too_large`.
+- Media access is authorized through the parent pin and unauthorized access
+  returns `403 forbidden`.
+
 Files:
 
 - `apps/api/src/modules/media/media.controller.ts`
 - `apps/api/src/modules/media/media.service.ts`
+- `apps/api/src/modules/media/repositories`
+- `apps/api/src/infra/r2`
 
 ## Share Links
 

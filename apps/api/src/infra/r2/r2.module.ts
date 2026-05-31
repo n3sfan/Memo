@@ -13,4 +13,4 @@ import { R2ObjectStorageAdapter } from './r2-object-storage.adapter';
   ],
   exports: [OBJECT_STORAGE],
 })
-export class StorageModule {}
+export class R2Module {}

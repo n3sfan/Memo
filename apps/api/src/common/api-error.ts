@@ -92,3 +92,15 @@ export function throwInternalError(
     details,
   );
 }
+
+export function throwPayloadTooLarge(
+  message = 'Payload too large.',
+  details: ApiErrorDetails = {},
+): never {
+  throw new ApiException(
+    HttpStatus.PAYLOAD_TOO_LARGE,
+    'payload_too_large',
+    message,
+    details,
+  );
+}
