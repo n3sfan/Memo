@@ -1,7 +1,8 @@
-import { Body, Controller, Headers, Param, Post } from '@nestjs/common';
+import { Body, Controller, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
 
 import { ApiEnvelope, createEnvelope } from '../../common/api-envelope';
 import {
+  LogoutRequestDto,
   LogoutResponseDto,
   OAuthCallbackRequestDto,
   OAuthProvider,
@@ -11,6 +12,8 @@ import {
   SessionResponseDto,
 } from './dto/auth.dto';
 import { AuthService } from './auth.service';
+import { RequestWithCurrentUser } from './current-user';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -48,11 +51,14 @@ export class AuthController {
     return createEnvelope(data, requestId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(
+    @Req() request: RequestWithCurrentUser,
+    @Body() body: LogoutRequestDto,
     @Headers('x-request-id') requestId?: string,
   ): Promise<ApiEnvelope<LogoutResponseDto>> {
-    const data = await this.authService.logout();
+    const data = await this.authService.logout(request, body);
 
     return createEnvelope(data, requestId);
   }

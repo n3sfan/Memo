@@ -8,4 +8,6 @@ export interface CurrentUser {
 export interface RequestWithCurrentUser {
   headers?: Record<string, string | string[] | undefined>;
   user?: CurrentUser;
+  accessTokenJti?: string;
+  accessTokenExpiresAt?: Date;
 }

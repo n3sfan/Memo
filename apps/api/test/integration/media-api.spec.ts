@@ -8,7 +8,9 @@ import {
   OBJECT_STORAGE,
   ObjectStoragePort,
 } from '../../src/infra/r2';
+import { InMemoryKeyValueStore, KEY_VALUE_STORE } from '../../src/infra/redis';
 import { JwtAuthGuard } from '../../src/modules/auth/jwt-auth.guard';
+import { AuthTokenService } from '../../src/modules/auth/session';
 import { AuthorizationService } from '../../src/modules/authorization/authorization.service';
 import {
   ACCESS_CONTROL_REPOSITORY,
@@ -42,7 +44,12 @@ describe('Media API', () => {
         MediaService,
         JwtAuthGuard,
         JwtService,
+        AuthTokenService,
         AuthorizationService,
+        {
+          provide: KEY_VALUE_STORE,
+          useValue: new InMemoryKeyValueStore(),
+        },
         {
           provide: ACCESS_CONTROL_REPOSITORY,
           useValue: accessRepository,
@@ -200,8 +207,11 @@ describe('Media API', () => {
     return jwtService.sign(
       {
         sub: userId,
+        jti: `${userId}-access-token`,
+        typ: 'access',
         email: `${userId}@example.test`,
         displayName: 'Memo User',
+        provider: 'google',
       },
       {
         secret: process.env.JWT_ACCESS_SECRET,

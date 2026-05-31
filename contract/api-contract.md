@@ -75,6 +75,94 @@ Status conventions:
 
 ## Auth
 
+Start OAuth:
+
+```http
+POST /api/v1/auth/oauth/:provider/start
+```
+
+`:provider` is `google` or `apple`.
+
+Body:
+
+```json
+{
+  "redirectUri": "memo://oauth/callback"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "authorizationUrl": "https://...",
+    "state": "oauth_..."
+  },
+  "requestId": "req_..."
+}
+```
+
+Complete OAuth:
+
+```http
+POST /api/v1/auth/oauth/:provider/callback
+```
+
+Body:
+
+```json
+{
+  "code": "provider-code",
+  "state": "oauth_...",
+  "redirectUri": "memo://oauth/callback"
+}
+```
+
+Cancelled or failed provider callbacks return `401 oauth_failed` and no token.
+
+Refresh session:
+
+```http
+POST /api/v1/auth/refresh
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "jwt"
+}
+```
+
+Logout:
+
+```http
+POST /api/v1/auth/logout
+Authorization: Bearer <accessToken>
+```
+
+Body may include the active refresh token so both token IDs are revoked:
+
+```json
+{
+  "refreshToken": "jwt"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "revoked": true
+  },
+  "requestId": "req_..."
+}
+```
+
+Expired or revoked tokens return `401 unauthorized` on protected routes.
+
 Session DTO:
 
 ```json
