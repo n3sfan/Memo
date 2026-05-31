@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { notImplemented } from '../../common/not-implemented';
 import {
   throwNotFound,
   throwValidationError,
@@ -16,6 +15,7 @@ import {
   PinsListResponseDto,
   UpdatePinRequestDto,
 } from './dto/pins.dto';
+import { parseBbox } from './bbox';
 import { PIN_REPOSITORY, PinRepository } from './repositories';
 
 @Injectable()
@@ -28,16 +28,17 @@ export class PinsService {
     private readonly objectStorage: ObjectStoragePort,
   ) {}
 
-  listByBbox(
+  async listByBbox(
     user: CurrentUser,
     mapId: string,
     query: BboxPinsQueryDto,
   ): Promise<PinsListResponseDto> {
-    void user;
-    void mapId;
-    void query;
+    await this.authorization.assertCanReadMap(user.id, mapId);
+    const bbox = parseBbox(query.bbox);
 
-    return notImplemented('PinsService.listByBbox');
+    return {
+      pins: await this.pinRepository.listPinsInBbox(mapId, bbox),
+    };
   }
 
   async createPin(

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../infra/prisma';
+import { Bbox } from '../bbox';
 import {
   PinDto,
   PinMediaDto,
@@ -10,6 +12,7 @@ import {
   CreatePinInput,
   DeletePinResult,
   PinRepository,
+  TimelinePageInput,
 } from './pin.repository';
 
 interface PinSqlRow {
@@ -51,6 +54,47 @@ interface PrismaMediaRecord {
 @Injectable()
 export class PrismaPinRepository implements PinRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listPinsInBbox(mapId: string, bbox: Bbox): Promise<PinDto[]> {
+    const rows = await this.prisma.$queryRaw<PinSqlRow[]>`
+      SELECT
+        p.id,
+        p.map_id,
+        p.title,
+        p.note,
+        p.memory_date,
+        p.lat,
+        p.lng,
+        p.created_at,
+        p.updated_at,
+        ${this.mediaJsonSql()}
+      FROM pins p
+      WHERE
+        p.map_id = ${mapId}::uuid
+        AND p.geom && ST_MakeEnvelope(
+          ${bbox.minLng},
+          ${bbox.minLat},
+          ${bbox.maxLng},
+          ${bbox.maxLat},
+          4326
+        )
+      ORDER BY p.created_at DESC, p.id DESC
+    `;
+
+    return rows.map((row) => this.pinFromSqlRow(row));
+  }
+
+  async listTimelinePage(
+    mapId: string,
+    input: TimelinePageInput,
+  ): Promise<PinDto[]> {
+    const rows =
+      input.order === 'asc'
+        ? await this.listTimelineAsc(mapId, input)
+        : await this.listTimelineDesc(mapId, input);
+
+    return rows.map((row) => this.pinFromSqlRow(row));
+  }
 
   async createPin(input: CreatePinInput): Promise<PinDto> {
     const memoryDate = this.optionalDate(input.request.memoryDate);
@@ -186,6 +230,180 @@ export class PrismaPinRepository implements PinRepository {
         removedMediaObjectKeys: media.map((item) => item.objectKey),
       };
     });
+  }
+
+  private listTimelineAsc(
+    mapId: string,
+    input: TimelinePageInput,
+  ): Promise<PinSqlRow[]> {
+    if (!input.cursor) {
+      return this.prisma.$queryRaw<PinSqlRow[]>`
+        SELECT
+          p.id,
+          p.map_id,
+          p.title,
+          p.note,
+          p.memory_date,
+          p.lat,
+          p.lng,
+          p.created_at,
+          p.updated_at,
+          ${this.mediaJsonSql()}
+        FROM pins p
+        WHERE p.map_id = ${mapId}::uuid
+        ORDER BY p.memory_date ASC NULLS LAST, p.id ASC
+        LIMIT ${input.limit}
+      `;
+    }
+
+    if (input.cursor.memoryDate === null) {
+      return this.prisma.$queryRaw<PinSqlRow[]>`
+        SELECT
+          p.id,
+          p.map_id,
+          p.title,
+          p.note,
+          p.memory_date,
+          p.lat,
+          p.lng,
+          p.created_at,
+          p.updated_at,
+          ${this.mediaJsonSql()}
+        FROM pins p
+        WHERE
+          p.map_id = ${mapId}::uuid
+          AND p.memory_date IS NULL
+          AND p.id > ${input.cursor.id}::uuid
+        ORDER BY p.memory_date ASC NULLS LAST, p.id ASC
+        LIMIT ${input.limit}
+      `;
+    }
+
+    return this.prisma.$queryRaw<PinSqlRow[]>`
+      SELECT
+        p.id,
+        p.map_id,
+        p.title,
+        p.note,
+        p.memory_date,
+        p.lat,
+        p.lng,
+        p.created_at,
+        p.updated_at,
+        ${this.mediaJsonSql()}
+      FROM pins p
+      WHERE
+        p.map_id = ${mapId}::uuid
+        AND (
+          p.memory_date > ${new Date(input.cursor.memoryDate)}::timestamptz
+          OR (
+            p.memory_date = ${new Date(input.cursor.memoryDate)}::timestamptz
+            AND p.id > ${input.cursor.id}::uuid
+          )
+          OR p.memory_date IS NULL
+        )
+      ORDER BY p.memory_date ASC NULLS LAST, p.id ASC
+      LIMIT ${input.limit}
+    `;
+  }
+
+  private listTimelineDesc(
+    mapId: string,
+    input: TimelinePageInput,
+  ): Promise<PinSqlRow[]> {
+    if (!input.cursor) {
+      return this.prisma.$queryRaw<PinSqlRow[]>`
+        SELECT
+          p.id,
+          p.map_id,
+          p.title,
+          p.note,
+          p.memory_date,
+          p.lat,
+          p.lng,
+          p.created_at,
+          p.updated_at,
+          ${this.mediaJsonSql()}
+        FROM pins p
+        WHERE p.map_id = ${mapId}::uuid
+        ORDER BY p.memory_date DESC NULLS LAST, p.id DESC
+        LIMIT ${input.limit}
+      `;
+    }
+
+    if (input.cursor.memoryDate === null) {
+      return this.prisma.$queryRaw<PinSqlRow[]>`
+        SELECT
+          p.id,
+          p.map_id,
+          p.title,
+          p.note,
+          p.memory_date,
+          p.lat,
+          p.lng,
+          p.created_at,
+          p.updated_at,
+          ${this.mediaJsonSql()}
+        FROM pins p
+        WHERE
+          p.map_id = ${mapId}::uuid
+          AND p.memory_date IS NULL
+          AND p.id < ${input.cursor.id}::uuid
+        ORDER BY p.memory_date DESC NULLS LAST, p.id DESC
+        LIMIT ${input.limit}
+      `;
+    }
+
+    return this.prisma.$queryRaw<PinSqlRow[]>`
+      SELECT
+        p.id,
+        p.map_id,
+        p.title,
+        p.note,
+        p.memory_date,
+        p.lat,
+        p.lng,
+        p.created_at,
+        p.updated_at,
+        ${this.mediaJsonSql()}
+      FROM pins p
+      WHERE
+        p.map_id = ${mapId}::uuid
+        AND (
+          p.memory_date < ${new Date(input.cursor.memoryDate)}::timestamptz
+          OR (
+            p.memory_date = ${new Date(input.cursor.memoryDate)}::timestamptz
+            AND p.id < ${input.cursor.id}::uuid
+          )
+          OR p.memory_date IS NULL
+        )
+      ORDER BY p.memory_date DESC NULLS LAST, p.id DESC
+      LIMIT ${input.limit}
+    `;
+  }
+
+  private mediaJsonSql(): Prisma.Sql {
+    return Prisma.sql`
+      COALESCE(
+        (
+          SELECT json_agg(
+            json_build_object(
+              'id', mf.id,
+              'pinId', mf.pin_id,
+              'mediaType', mf.type,
+              'objectKey', mf.object_key,
+              'mimeType', mf.mime,
+              'sizeBytes', mf.size_bytes,
+              'createdAt', mf.created_at
+            )
+            ORDER BY mf.created_at ASC
+          )
+          FROM media_files mf
+          WHERE mf.pin_id = p.id
+        ),
+        '[]'::json
+      ) AS media
+    `;
   }
 
   private pinSelect(): {

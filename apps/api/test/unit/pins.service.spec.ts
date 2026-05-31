@@ -6,12 +6,20 @@ import { CurrentUser } from '../../src/modules/auth/current-user';
 import { AuthorizationService } from '../../src/modules/authorization/authorization.service';
 import {
   CreatePinRequestDto,
+  PinsListResponseDto,
   PinDto,
   UpdatePinRequestDto,
 } from '../../src/modules/pins/dto/pins.dto';
 import { PinsService } from '../../src/modules/pins/pins.service';
 
 interface PinsServiceUnderTest {
+  listByBbox(
+    user: CurrentUser,
+    mapId: string,
+    query: {
+      bbox?: string;
+    },
+  ): Promise<PinsListResponseDto>;
   createPin(
     user: CurrentUser,
     mapId: string,
@@ -31,6 +39,8 @@ interface PinsServiceUnderTest {
 }
 
 interface PinRepositoryMock {
+  listPinsInBbox: jest.Mock;
+  listTimelinePage: jest.Mock;
   createPin: jest.Mock;
   updatePin: jest.Mock;
   deletePin: jest.Mock;
@@ -38,7 +48,7 @@ interface PinRepositoryMock {
 
 type AuthorizationMock = jest.Mocked<Pick<
   AuthorizationService,
-  'assertCanCreatePin' | 'assertCanModifyPin'
+  'assertCanReadMap' | 'assertCanCreatePin' | 'assertCanModifyPin'
 >>;
 
 describe('PinsService', () => {
@@ -54,6 +64,7 @@ describe('PinsService', () => {
 
   beforeEach(() => {
     authorization = {
+      assertCanReadMap: jest.fn(),
       assertCanCreatePin: jest.fn(),
       assertCanModifyPin: jest.fn(),
     };
@@ -61,6 +72,8 @@ describe('PinsService', () => {
       deleteObject: jest.fn(),
     };
     pinRepository = {
+      listPinsInBbox: jest.fn(),
+      listTimelinePage: jest.fn(),
       createPin: jest.fn(),
       updatePin: jest.fn(),
       deletePin: jest.fn(),
@@ -70,6 +83,46 @@ describe('PinsService', () => {
       authorization: AuthorizationMock,
       objectStorage: jest.Mocked<Pick<ObjectStoragePort, 'deleteObject'>>,
     ) => PinsServiceUnderTest)(pinRepository, authorization, objectStorage);
+  });
+
+  it('lists viewport pins after authorizing map read access', async () => {
+    const pins = [
+      pinDto({
+        id: 'pin-in-bbox',
+        lat: 10.7769,
+        lng: 106.7009,
+      }),
+    ];
+    pinRepository.listPinsInBbox.mockResolvedValue(pins);
+
+    await expect(
+      service.listByBbox(user, 'map-1', {
+        bbox: '106.6,10.7,106.8,10.8',
+      }),
+    ).resolves.toEqual({
+      pins,
+    });
+
+    expect(authorization.assertCanReadMap).toHaveBeenCalledWith(
+      user.id,
+      'map-1',
+    );
+    expect(pinRepository.listPinsInBbox).toHaveBeenCalledWith('map-1', {
+      minLng: 106.6,
+      minLat: 10.7,
+      maxLng: 106.8,
+      maxLat: 10.8,
+    });
+  });
+
+  it('rejects invalid bbox values before querying pins', async () => {
+    await expect(
+      service.listByBbox(user, 'map-1', {
+        bbox: '106.8,10.7,106.6,10.8',
+      }),
+    ).rejects.toMatchApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'validation_error');
+
+    expect(pinRepository.listPinsInBbox).not.toHaveBeenCalled();
   });
 
   it('rejects invalid create coordinates before authorizing or persisting', async () => {
