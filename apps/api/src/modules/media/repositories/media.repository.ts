@@ -15,4 +15,5 @@ export interface CreateMediaInput {
 export interface MediaRepository {
   createMedia(input: CreateMediaInput): Promise<MediaRecord>;
   findMediaById(mediaId: string): Promise<MediaRecord | null>;
+  deleteMediaById(mediaId: string): Promise<void>;
 }

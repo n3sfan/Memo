@@ -14,6 +14,10 @@ import {
   MediaRecord,
 } from '../../src/modules/media/repositories';
 
+type MediaRepositoryMock = jest.Mocked<MediaRepository> & {
+  deleteMediaById: jest.Mock<Promise<void>, [string]>;
+};
+
 describe('MediaService', () => {
   const user: CurrentUser = {
     id: 'user-1',
@@ -22,7 +26,7 @@ describe('MediaService', () => {
     provider: 'google',
   };
 
-  let mediaRepository: jest.Mocked<MediaRepository>;
+  let mediaRepository: MediaRepositoryMock;
   let objectStorage: jest.Mocked<ObjectStoragePort>;
   let authorization: jest.Mocked<
     Pick<AuthorizationService, 'assertCanUploadMedia' | 'assertCanReadMedia'>
@@ -189,12 +193,50 @@ describe('MediaService', () => {
       'pins/pin-1/photo.jpg',
     );
   });
+
+  it('deletes an authorized media object and metadata reference', async () => {
+    mediaRepository.findMediaById.mockResolvedValue(
+      mediaRecord({
+        id: 'media-1',
+        pinId: 'pin-1',
+        objectKey: 'pins/pin-1/photo.jpg',
+      }),
+    );
+
+    await expect(
+      (
+        service as unknown as {
+          deleteMedia: (
+            user: CurrentUser,
+            mediaId: string,
+          ) => Promise<{ deleted: true }>;
+        }
+      ).deleteMedia(user, 'media-1'),
+    ).resolves.toEqual({
+      deleted: true,
+    });
+
+    expect(authorization.assertCanUploadMedia).toHaveBeenCalledWith(
+      'user-1',
+      'pin-1',
+    );
+    expect(objectStorage.deleteObject).toHaveBeenCalledWith(
+      'pins/pin-1/photo.jpg',
+    );
+    expect(mediaRepository.deleteMediaById).toHaveBeenCalledWith('media-1');
+    expect(
+      objectStorage.deleteObject.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      mediaRepository.deleteMediaById.mock.invocationCallOrder[0],
+    );
+  });
 });
 
-function createMediaRepositoryMock(): jest.Mocked<MediaRepository> {
+function createMediaRepositoryMock(): MediaRepositoryMock {
   return {
     createMedia: jest.fn(),
     findMediaById: jest.fn(),
+    deleteMediaById: jest.fn(),
   };
 }
 

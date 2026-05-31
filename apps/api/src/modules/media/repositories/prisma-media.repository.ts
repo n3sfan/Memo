@@ -39,6 +39,17 @@ export class PrismaMediaRepository implements MediaRepository {
     return media ? this.toMediaRecord(media) : null;
   }
 
+  async deleteMediaById(mediaId: string): Promise<void> {
+    await this.prisma.mediaFile.delete({
+      where: {
+        id: mediaId,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
   private mediaSelect(): {
     id: true;
     pinId: true;

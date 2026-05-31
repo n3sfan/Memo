@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 
 import { ApiException } from '../../src/common/api-error';
+import { ObjectStoragePort } from '../../src/infra/r2';
 import { CurrentUser } from '../../src/modules/auth/current-user';
 import { AuthorizationService } from '../../src/modules/authorization/authorization.service';
 import {
@@ -42,6 +43,7 @@ type AuthorizationMock = jest.Mocked<Pick<
 
 describe('PinsService', () => {
   let authorization: AuthorizationMock;
+  let objectStorage: jest.Mocked<Pick<ObjectStoragePort, 'deleteObject'>>;
   let pinRepository: PinRepositoryMock;
   let service: PinsServiceUnderTest;
 
@@ -55,6 +57,9 @@ describe('PinsService', () => {
       assertCanCreatePin: jest.fn(),
       assertCanModifyPin: jest.fn(),
     };
+    objectStorage = {
+      deleteObject: jest.fn(),
+    };
     pinRepository = {
       createPin: jest.fn(),
       updatePin: jest.fn(),
@@ -63,7 +68,8 @@ describe('PinsService', () => {
     service = new (PinsService as unknown as new (
       repository: PinRepositoryMock,
       authorization: AuthorizationMock,
-    ) => PinsServiceUnderTest)(pinRepository, authorization);
+      objectStorage: jest.Mocked<Pick<ObjectStoragePort, 'deleteObject'>>,
+    ) => PinsServiceUnderTest)(pinRepository, authorization, objectStorage);
   });
 
   it('rejects invalid create coordinates before authorizing or persisting', async () => {
@@ -163,6 +169,30 @@ describe('PinsService', () => {
       'pin-1',
     );
     expect(pinRepository.deletePin).toHaveBeenCalledWith('pin-1');
+  });
+
+  it('removes linked media objects after deleting their pin references', async () => {
+    pinRepository.deletePin.mockResolvedValue({
+      deleted: true,
+      removedMediaObjectKeys: [
+        'pins/pin-1/photo.jpg',
+        'pins/pin-1/audio.m4a',
+      ],
+    });
+
+    await expect(service.deletePin(user, 'pin-1')).resolves.toEqual({
+      deleted: true,
+    });
+
+    expect(objectStorage.deleteObject).toHaveBeenCalledTimes(2);
+    expect(objectStorage.deleteObject).toHaveBeenNthCalledWith(
+      1,
+      'pins/pin-1/photo.jpg',
+    );
+    expect(objectStorage.deleteObject).toHaveBeenNthCalledWith(
+      2,
+      'pins/pin-1/audio.m4a',
+    );
   });
 });
 

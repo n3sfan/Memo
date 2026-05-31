@@ -5,6 +5,7 @@ import {
   throwNotFound,
   throwValidationError,
 } from '../../common/api-error';
+import { OBJECT_STORAGE, ObjectStoragePort } from '../../infra/r2';
 import { CurrentUser } from '../auth/current-user';
 import { AuthorizationService } from '../authorization/authorization.service';
 import {
@@ -23,6 +24,8 @@ export class PinsService {
     @Inject(PIN_REPOSITORY)
     private readonly pinRepository: PinRepository,
     private readonly authorization: AuthorizationService,
+    @Inject(OBJECT_STORAGE)
+    private readonly objectStorage: ObjectStoragePort,
   ) {}
 
   listByBbox(
@@ -84,7 +87,13 @@ export class PinsService {
     pinId: string,
   ): Promise<DeletePinResponseDto> {
     await this.authorization.assertCanModifyPin(user.id, pinId);
-    await this.pinRepository.deletePin(pinId);
+    const result = await this.pinRepository.deletePin(pinId);
+
+    await Promise.all(
+      result.removedMediaObjectKeys.map((objectKey) =>
+        this.objectStorage.deleteObject(objectKey),
+      ),
+    );
 
     return {
       deleted: true,

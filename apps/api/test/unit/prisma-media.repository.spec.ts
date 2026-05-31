@@ -56,18 +56,40 @@ describe('PrismaMediaRepository', () => {
       },
     });
   });
+
+  it('deletes a media metadata reference by id', async () => {
+    const prisma = createPrismaMock();
+    const repository = new PrismaMediaRepository(
+      prisma as unknown as PrismaService,
+    ) as PrismaMediaRepository & {
+      deleteMediaById(mediaId: string): Promise<void>;
+    };
+
+    await expect(repository.deleteMediaById('media-1')).resolves.toBeUndefined();
+
+    expect(prisma.mediaFile.delete).toHaveBeenCalledWith({
+      where: {
+        id: 'media-1',
+      },
+      select: {
+        id: true,
+      },
+    });
+  });
 });
 
 function createPrismaMock(): {
   mediaFile: {
     create: jest.Mock;
     findUnique: jest.Mock;
+    delete: jest.Mock;
   };
 } {
   return {
     mediaFile: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      delete: jest.fn(),
     },
   };
 }

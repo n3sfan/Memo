@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Headers, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 
 import { ApiEnvelope, createEnvelope } from '../../common/api-envelope';
 import {
@@ -7,6 +16,7 @@ import {
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import {
+  DeleteMediaResponseDto,
   MediaDto,
   MediaReadUrlResponseDto,
   PresignMediaRequestDto,
@@ -55,6 +65,17 @@ export class MediaController {
     @Headers('x-request-id') requestId?: string,
   ): Promise<ApiEnvelope<MediaReadUrlResponseDto>> {
     const data = await this.mediaService.createReadUrl(user, mediaId);
+
+    return createEnvelope(data, requestId);
+  }
+
+  @Delete('media/:mediaId')
+  async deleteMedia(
+    @CurrentUser() user: CurrentUserValue,
+    @Param('mediaId') mediaId: string,
+    @Headers('x-request-id') requestId?: string,
+  ): Promise<ApiEnvelope<DeleteMediaResponseDto>> {
+    const data = await this.mediaService.deleteMedia(user, mediaId);
 
     return createEnvelope(data, requestId);
   }

@@ -2,6 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 
 import { ApiException } from '../../src/common/api-error';
 import { PrismaService } from '../../src/infra/prisma';
+import { ObjectStoragePort } from '../../src/infra/r2';
 import { CurrentUser } from '../../src/modules/auth/current-user';
 import { AuthorizationService } from '../../src/modules/authorization/authorization.service';
 import { PrismaAccessControlRepository } from '../../src/modules/authorization/repositories';
@@ -14,6 +15,7 @@ const describeDb =
 describeDb('Pins PostGIS DB integration', () => {
   let prisma: PrismaService;
   let service: PinsService;
+  let objectStorage: jest.Mocked<Pick<ObjectStoragePort, 'deleteObject'>>;
 
   const owner: CurrentUser = {
     id: '11111111-1111-4111-8111-111111111111',
@@ -33,7 +35,14 @@ describeDb('Pins PostGIS DB integration', () => {
     const authorization = new AuthorizationService(
       new PrismaAccessControlRepository(prisma),
     );
-    service = new PinsService(pinRepository, authorization);
+    objectStorage = {
+      deleteObject: jest.fn(),
+    };
+    service = new PinsService(
+      pinRepository,
+      authorization,
+      objectStorage as unknown as ObjectStoragePort,
+    );
   });
 
   beforeEach(async () => {
@@ -163,6 +172,9 @@ describeDb('Pins PostGIS DB integration', () => {
 
     await expect(countRows(prisma, 'pins')).resolves.toBe(0);
     await expect(countRows(prisma, 'media_files')).resolves.toBe(0);
+    expect(objectStorage.deleteObject).toHaveBeenCalledWith(
+      'users/owner/pins/photo.jpg',
+    );
   });
 });
 

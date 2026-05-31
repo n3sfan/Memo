@@ -10,6 +10,7 @@ import { OBJECT_STORAGE, ObjectStoragePort } from '../../infra/r2';
 import { CurrentUser } from '../auth/current-user';
 import { AuthorizationService } from '../authorization/authorization.service';
 import {
+  DeleteMediaResponseDto,
   MediaDto,
   MediaType,
   MediaReadUrlResponseDto,
@@ -92,6 +93,25 @@ export class MediaService {
     return {
       url: presigned.readUrl,
       expiresAt: presigned.expiresAt.toISOString(),
+    };
+  }
+
+  async deleteMedia(
+    user: CurrentUser,
+    mediaId: string,
+  ): Promise<DeleteMediaResponseDto> {
+    const media = await this.mediaRepository.findMediaById(mediaId);
+
+    if (!media) {
+      throwNotFound('Media not found.');
+    }
+
+    await this.authorization.assertCanUploadMedia(user.id, media.pinId);
+    await this.objectStorage.deleteObject(media.objectKey);
+    await this.mediaRepository.deleteMediaById(mediaId);
+
+    return {
+      deleted: true,
     };
   }
 

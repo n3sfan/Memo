@@ -25,7 +25,9 @@ describe('Media API', () => {
   let app: INestApplication;
   let jwtService: JwtService;
   let accessRepository: jest.Mocked<AccessControlRepository>;
-  let mediaRepository: jest.Mocked<MediaRepository>;
+  let mediaRepository: jest.Mocked<MediaRepository> & {
+    deleteMediaById: jest.Mock<Promise<void>, [string]>;
+  };
   let objectStorage: jest.Mocked<ObjectStoragePort>;
 
   beforeEach(async () => {
@@ -160,6 +162,40 @@ describe('Media API', () => {
     expect(objectStorage.createPresignedRead).not.toHaveBeenCalled();
   });
 
+  it('deletes an authorized media object and metadata reference', async () => {
+    mediaRepository.findMediaById.mockResolvedValue({
+      id: 'media-1',
+      pinId: 'pin-1',
+      mediaType: 'image',
+      objectKey: 'pins/pin-1/photo.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 512,
+      createdAt: '2026-06-01T00:20:00.000Z',
+    });
+    accessRepository.findPinAccessRecord.mockResolvedValue({
+      map: mapRecord({
+        ownerId: 'user-1',
+      }),
+    });
+
+    const response = await request(app.getHttpServer())
+      .delete('/api/v1/media/media-1')
+      .set('authorization', `Bearer ${accessToken('user-1')}`)
+      .set('x-request-id', 'req_media_delete')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      data: {
+        deleted: true,
+      },
+      requestId: 'req_media_delete',
+    });
+    expect(objectStorage.deleteObject).toHaveBeenCalledWith(
+      'pins/pin-1/photo.jpg',
+    );
+    expect(mediaRepository.deleteMediaById).toHaveBeenCalledWith('media-1');
+  });
+
   function accessToken(userId: string): string {
     return jwtService.sign(
       {
@@ -184,10 +220,13 @@ function createAccessRepositoryMock(): jest.Mocked<AccessControlRepository> {
   };
 }
 
-function createMediaRepositoryMock(): jest.Mocked<MediaRepository> {
+function createMediaRepositoryMock(): jest.Mocked<MediaRepository> & {
+  deleteMediaById: jest.Mock<Promise<void>, [string]>;
+} {
   return {
     createMedia: jest.fn(),
     findMediaById: jest.fn(),
+    deleteMediaById: jest.fn(),
   };
 }
 

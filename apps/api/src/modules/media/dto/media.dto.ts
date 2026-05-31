@@ -35,3 +35,7 @@ export class MediaReadUrlResponseDto {
   url!: string;
   expiresAt!: string;
 }
+
+export class DeleteMediaResponseDto {
+  deleted!: true;
+}
