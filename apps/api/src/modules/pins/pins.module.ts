@@ -18,6 +18,6 @@ import { PinsService } from './pins.service';
       useExisting: PrismaPinRepository,
     },
   ],
-  exports: [PinsService],
+  exports: [PinsService, PIN_REPOSITORY],
 })
 export class PinsModule {}
