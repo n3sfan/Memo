@@ -16,6 +16,7 @@
     "start:prod": "node dist/main.js",
     "test": "jest --config ./jest.config.js",
     "test:contract": "jest --config ./jest.config.js --runTestsByPath test/integration/api-contract-smoke.spec.ts",
+    "test:db": "jest --config ./jest.config.js --runTestsByPath test/integration/pins-postgis-db.spec.ts",
     "test:property": "jest --config ./jest.property.config.js --passWithNoTests"
   },
   "dependencies": {

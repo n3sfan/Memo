@@ -2,9 +2,9 @@
 
 All routes are under the global prefix `/api/v1`.
 
-These controllers and services are scaffolded only. Service methods currently
+Most controllers and services are scaffolded only. Scaffolded service methods
 return `501 not_implemented` through the common error envelope until feature
-owners add real logic.
+owners add real logic. See each module note for implemented exceptions.
 
 ## Common
 
@@ -49,6 +49,13 @@ Files:
 - `GET /pins/:pinId`
 - `PATCH /pins/:pinId`
 - `DELETE /pins/:pinId`
+
+Status:
+
+- `POST /maps/:mapId/pins`, `GET /pins/:pinId`, `PATCH /pins/:pinId` and
+  `DELETE /pins/:pinId` are implemented.
+- `GET /maps/:mapId/pins` remains scaffolded until bbox map loading is
+  implemented as its own slice.
 
 Files:
 

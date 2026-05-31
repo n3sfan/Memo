@@ -127,6 +127,14 @@ export class AuthorizationService {
     );
   }
 
+  async assertCanModifyPin(userId: string, pinId: string): Promise<void> {
+    this.assertWritePermission(
+      await this.resolvePinPermission(userId, pinId),
+      'Pin not found.',
+      'You cannot modify this pin.',
+    );
+  }
+
   async assertCanUploadMedia(userId: string, pinId: string): Promise<void> {
     await this.assertCanWritePin(userId, pinId);
   }
@@ -215,6 +223,20 @@ export class AuthorizationService {
   ): void {
     if (!permission.exists || !permission.allowed) {
       throwNotFound(notFoundMessage);
+    }
+  }
+
+  private assertWritePermission(
+    permission: ResourcePermission,
+    notFoundMessage: string,
+    forbiddenMessage: string,
+  ): void {
+    if (!permission.exists) {
+      throwNotFound(notFoundMessage);
+    }
+
+    if (!permission.allowed) {
+      throwForbidden(forbiddenMessage);
     }
   }
 

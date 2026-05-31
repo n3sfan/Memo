@@ -167,6 +167,69 @@ Body:
 }
 ```
 
+Response: `Pin DTO`.
+
+Get pin:
+
+```http
+GET /api/v1/pins/:pinId
+```
+
+Response: `Pin DTO`.
+
+Update pin:
+
+```http
+PATCH /api/v1/pins/:pinId
+```
+
+Body:
+
+```json
+{
+  "title": "Updated title",
+  "note": "Updated note",
+  "memoryDate": "2026-05-31T00:00:00.000Z",
+  "lat": 11.9404,
+  "lng": 108.4583
+}
+```
+
+Fields are optional. If a request updates coordinates, it must send both `lat`
+and `lng` so the backend can recompute the PostGIS point geometry.
+
+Response: `Pin DTO`.
+
+Delete pin:
+
+```http
+DELETE /api/v1/pins/:pinId
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "deleted": true
+  },
+  "requestId": "req_..."
+}
+```
+
+Coordinate validation:
+
+- `lat` must be a finite number between `-90` and `90`.
+- `lng` must be a finite number between `-180` and `180`.
+- Invalid coordinates return `422 validation_error`.
+
+Authorization:
+
+- Creating a pin requires readable access to the parent map.
+- Reading a pin resolves access through the parent map.
+- Editing or deleting an existing pin without permission returns
+  `403 forbidden`.
+
 ## Media
 
 Presigned upload endpoint:

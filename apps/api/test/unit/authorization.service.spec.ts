@@ -78,6 +78,34 @@ describe('AuthorizationService', () => {
     );
   });
 
+  it('returns forbidden when modifying an existing pin without map access', async () => {
+    accessRepository.findPinAccessRecord.mockResolvedValue({
+      map: mapRecord({
+        ownerId: 'owner-1',
+      }),
+    });
+
+    await expectApiException(
+      service.assertCanModifyPin('user-1', 'pin-1'),
+      HttpStatus.FORBIDDEN,
+      'forbidden',
+    );
+  });
+
+  it('keeps media upload access hidden when the pin map is inaccessible', async () => {
+    accessRepository.findPinAccessRecord.mockResolvedValue({
+      map: mapRecord({
+        ownerId: 'owner-1',
+      }),
+    });
+
+    await expectApiException(
+      service.assertCanUploadMedia('user-1', 'pin-1'),
+      HttpStatus.NOT_FOUND,
+      'not_found',
+    );
+  });
+
   it('rejects access to another user account', () => {
     expect(() => service.assertCanAccessAccount('user-1', 'user-2')).toThrow(
       ApiException,

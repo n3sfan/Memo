@@ -1,6 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { notImplemented } from '../../common/not-implemented';
+import {
+  throwNotFound,
+  throwValidationError,
+} from '../../common/api-error';
+import { CurrentUser } from '../auth/current-user';
+import { AuthorizationService } from '../authorization/authorization.service';
 import {
   BboxPinsQueryDto,
   CreatePinRequestDto,
@@ -9,42 +15,116 @@ import {
   PinsListResponseDto,
   UpdatePinRequestDto,
 } from './dto/pins.dto';
+import { PIN_REPOSITORY, PinRepository } from './repositories';
 
 @Injectable()
 export class PinsService {
+  constructor(
+    @Inject(PIN_REPOSITORY)
+    private readonly pinRepository: PinRepository,
+    private readonly authorization: AuthorizationService,
+  ) {}
+
   listByBbox(
+    user: CurrentUser,
     mapId: string,
     query: BboxPinsQueryDto,
   ): Promise<PinsListResponseDto> {
+    void user;
     void mapId;
     void query;
 
     return notImplemented('PinsService.listByBbox');
   }
 
-  createPin(mapId: string, request: CreatePinRequestDto): Promise<PinDto> {
-    void mapId;
-    void request;
+  async createPin(
+    user: CurrentUser,
+    mapId: string,
+    request: CreatePinRequestDto,
+  ): Promise<PinDto> {
+    this.assertCoordinates(request.lat, request.lng);
+    await this.authorization.assertCanCreatePin(user.id, mapId);
 
-    return notImplemented('PinsService.createPin');
+    return this.pinRepository.createPin({
+      mapId,
+      createdBy: user.id,
+      request,
+    });
   }
 
-  getPin(pinId: string): Promise<PinDto> {
-    void pinId;
+  async getPin(user: CurrentUser, pinId: string): Promise<PinDto> {
+    await this.authorization.assertCanReadPin(user.id, pinId);
+    const pin = await this.pinRepository.findPinById(pinId);
 
-    return notImplemented('PinsService.getPin');
+    if (!pin) {
+      throwNotFound('Pin not found.');
+    }
+
+    return pin;
   }
 
-  updatePin(pinId: string, request: UpdatePinRequestDto): Promise<PinDto> {
-    void pinId;
-    void request;
+  async updatePin(
+    user: CurrentUser,
+    pinId: string,
+    request: UpdatePinRequestDto,
+  ): Promise<PinDto> {
+    this.assertUpdateCoordinates(request);
+    await this.authorization.assertCanModifyPin(user.id, pinId);
+    const pin = await this.pinRepository.updatePin(pinId, request);
 
-    return notImplemented('PinsService.updatePin');
+    if (!pin) {
+      throwNotFound('Pin not found.');
+    }
+
+    return pin;
   }
 
-  deletePin(pinId: string): Promise<DeletePinResponseDto> {
-    void pinId;
+  async deletePin(
+    user: CurrentUser,
+    pinId: string,
+  ): Promise<DeletePinResponseDto> {
+    await this.authorization.assertCanModifyPin(user.id, pinId);
+    await this.pinRepository.deletePin(pinId);
 
-    return notImplemented('PinsService.deletePin');
+    return {
+      deleted: true,
+    };
+  }
+
+  private assertUpdateCoordinates(request: UpdatePinRequestDto): void {
+    const hasLat = Object.prototype.hasOwnProperty.call(request, 'lat');
+    const hasLng = Object.prototype.hasOwnProperty.call(request, 'lng');
+
+    if (hasLat !== hasLng) {
+      throwValidationError(
+        'Both lat and lng are required when updating pin coordinates.',
+        {
+          lat: request.lat,
+          lng: request.lng,
+        },
+      );
+    }
+
+    if (hasLat && hasLng) {
+      this.assertCoordinates(request.lat, request.lng);
+    }
+  }
+
+  private assertCoordinates(lat: unknown, lng: unknown): void {
+    if (
+      typeof lat !== 'number' ||
+      typeof lng !== 'number' ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      throwValidationError('Invalid coordinates.', {
+        lat,
+        lng,
+      });
+    }
   }
 }
