@@ -15,6 +15,7 @@ export class OAuthCallbackRequestDto {
   redirectUri?: string;
   error?: string;
   errorDescription?: string;
+  error_description?: string;
 }
 
 export class RefreshSessionRequestDto {

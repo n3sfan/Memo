@@ -81,7 +81,11 @@ export class AuthService {
     this.copyQueryValue(url, "code", request.code);
     this.copyQueryValue(url, "state", request.state);
     this.copyQueryValue(url, "error", request.error);
-    this.copyQueryValue(url, "error_description", request.errorDescription);
+    this.copyQueryValue(
+      url,
+      "error_description",
+      request.errorDescription ?? request.error_description,
+    );
 
     return url.toString();
   }

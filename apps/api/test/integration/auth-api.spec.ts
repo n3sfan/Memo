@@ -114,12 +114,37 @@ describe("Auth API", () => {
 
     await request(app.getHttpServer())
       .get("/api/v1/auth/oauth/google/callback")
-      .query({ code: "oauth-code", state: "oauth-state" })
+      .query({
+        code: "oauth-code",
+        state: "oauth-state",
+        error_description: "ignored",
+      })
       .expect(302)
       .expect(
         "location",
-        "http://localhost:5000/oauth/google?code=oauth-code&state=oauth-state",
+        "http://localhost:5000/oauth/google?code=oauth-code&state=oauth-state&error_description=ignored",
       );
+  });
+
+  it("redirects provider form_post OAuth callbacks back to the app route", async () => {
+    process.env.OAUTH_APP_REDIRECT_BASE_URL = "http://localhost:5000";
+
+    await request(app.getHttpServer())
+      .post("/api/v1/auth/oauth/apple/callback")
+      .type("form")
+      .send({
+        code: "apple-code",
+        state: "apple-state",
+        error_description: "optional provider message",
+      })
+      .expect(302)
+      .expect(
+        "location",
+        "http://localhost:5000/oauth/apple?code=apple-code&state=apple-state&error_description=optional+provider+message",
+      );
+
+    expect(apple.complete).not.toHaveBeenCalled();
+    expect(userRepository.upsertOAuthUser).not.toHaveBeenCalled();
   });
 
   it("returns a session after successful callback", async () => {

@@ -56,8 +56,17 @@ export class AuthController {
   async completeOAuth(
     @Param("provider") provider: OAuthProvider,
     @Body() request: OAuthCallbackRequestDto,
+    @Res({ passthrough: true }) response: RedirectResponse,
+    @Headers("content-type") contentType?: string,
     @Headers("x-request-id") requestId?: string,
-  ): Promise<ApiEnvelope<SessionResponseDto>> {
+  ): Promise<ApiEnvelope<SessionResponseDto> | void> {
+    if (this.isBrowserOAuthCallback(request, contentType)) {
+      response.redirect(
+        this.authService.buildOAuthAppRedirect(provider, request),
+      );
+      return;
+    }
+
     const data = await this.authService.completeOAuth(provider, request);
 
     return createEnvelope(data, requestId);
@@ -83,6 +92,17 @@ export class AuthController {
     const data = await this.authService.logout(request, body);
 
     return createEnvelope(data, requestId);
+  }
+
+  private isBrowserOAuthCallback(
+    request: OAuthCallbackRequestDto,
+    contentType?: string,
+  ): boolean {
+    return (
+      !request.redirectUri &&
+      Boolean(request.code || request.error) &&
+      Boolean(contentType?.includes("application/x-www-form-urlencoded"))
+    );
   }
 }
 
