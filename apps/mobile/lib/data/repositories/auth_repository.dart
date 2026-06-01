@@ -6,9 +6,23 @@ import '../models/models.dart';
 abstract interface class AuthRepository {
   Future<AuthSession?> getSavedSession();
 
+  Future<OAuthStartResponseDto> startOAuth({
+    required OAuthProviderType provider,
+    required String redirectUri,
+  });
+
+  Future<SessionDto> completeOAuth({
+    required OAuthProviderType provider,
+    required String code,
+    required String state,
+    required String redirectUri,
+  });
+
   Future<SessionDto> refreshSession();
 
   Future<void> saveSession(SessionDto session);
+
+  Future<void> clearSession();
 
   Future<void> logout();
 }
@@ -23,23 +37,51 @@ class ApiAuthRepository implements AuthRepository {
   final TokenStorage tokenStorage;
 
   @override
-  Future<AuthSession?> getSavedSession() async {
-    final String? accessToken = await tokenStorage.getAccessToken();
-    final String? refreshToken = await tokenStorage.getRefreshToken();
+  Future<AuthSession?> getSavedSession() {
+    return tokenStorage.getSession();
+  }
 
-    if (accessToken == null || refreshToken == null) {
-      return null;
-    }
-
-    return AuthSession(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
+  @override
+  Future<OAuthStartResponseDto> startOAuth({
+    required OAuthProviderType provider,
+    required String redirectUri,
+  }) {
+    return apiClient.post<OAuthStartResponseDto>(
+      '/auth/oauth/${provider.pathSegment}/start',
+      body: OAuthStartRequestDto(redirectUri: redirectUri).toJson(),
+      decoder: OAuthStartResponseDto.fromJson,
     );
+  }
+
+  @override
+  Future<SessionDto> completeOAuth({
+    required OAuthProviderType provider,
+    required String code,
+    required String state,
+    required String redirectUri,
+  }) async {
+    final SessionDto session = await apiClient.post<SessionDto>(
+      '/auth/oauth/${provider.pathSegment}/callback',
+      body: OAuthCallbackRequestDto(
+        code: code,
+        state: state,
+        redirectUri: redirectUri,
+      ).toJson(),
+      decoder: SessionDto.fromJson,
+    );
+    await saveSession(session);
+
+    return session;
   }
 
   @override
   Future<SessionDto> refreshSession() async {
     final String? refreshToken = await tokenStorage.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await clearSession();
+      throw const FormatException('Missing refresh token');
+    }
+
     final SessionDto session = await apiClient.post<SessionDto>(
       '/auth/refresh',
       body: <String, Object?>{
@@ -58,13 +100,26 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> clearSession() {
+    return tokenStorage.clearSession();
+  }
+
+  @override
   Future<void> logout() async {
-    await apiClient.post<JsonMap>(
-      '/auth/logout',
-      decoder: (Object? data) => data == null
-          ? const <String, Object?>{}
-          : asJsonMap(data, name: 'logout response'),
-    );
-    await tokenStorage.clearSession();
+    final String? refreshToken = await tokenStorage.getRefreshToken();
+
+    try {
+      await apiClient.post<JsonMap>(
+        '/auth/logout',
+        body: refreshToken == null || refreshToken.isEmpty
+            ? null
+            : <String, Object?>{'refreshToken': refreshToken},
+        decoder: (Object? data) => data == null
+            ? const <String, Object?>{}
+            : asJsonMap(data, name: 'logout response'),
+      );
+    } finally {
+      await clearSession();
+    }
   }
 }

@@ -5,34 +5,38 @@ abstract interface class TokenStorage {
 
   Future<String?> getRefreshToken();
 
+  Future<AuthSession?> getSession();
+
   Future<void> saveSession(AuthSession session);
 
   Future<void> clearSession();
 }
 
 class InMemoryTokenStorage implements TokenStorage {
-  String? _accessToken;
-  String? _refreshToken;
+  AuthSession? _session;
 
   @override
   Future<String?> getAccessToken() async {
-    return _accessToken;
+    return _session?.accessToken;
   }
 
   @override
   Future<String?> getRefreshToken() async {
-    return _refreshToken;
+    return _session?.refreshToken;
+  }
+
+  @override
+  Future<AuthSession?> getSession() async {
+    return _session;
   }
 
   @override
   Future<void> saveSession(AuthSession session) async {
-    _accessToken = session.accessToken;
-    _refreshToken = session.refreshToken;
+    _session = session;
   }
 
   @override
   Future<void> clearSession() async {
-    _accessToken = null;
-    _refreshToken = null;
+    _session = null;
   }
 }

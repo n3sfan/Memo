@@ -1,6 +1,17 @@
-import { Body, Controller, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
 
-import { ApiEnvelope, createEnvelope } from '../../common/api-envelope';
+import { ApiEnvelope, createEnvelope } from "../../common/api-envelope";
 import {
   LogoutRequestDto,
   LogoutResponseDto,
@@ -10,41 +21,52 @@ import {
   OAuthStartResponseDto,
   RefreshSessionRequestDto,
   SessionResponseDto,
-} from './dto/auth.dto';
-import { AuthService } from './auth.service';
-import { RequestWithCurrentUser } from './current-user';
-import { JwtAuthGuard } from './jwt-auth.guard';
+} from "./dto/auth.dto";
+import { AuthService } from "./auth.service";
+import { RequestWithCurrentUser } from "./current-user";
+import { JwtAuthGuard } from "./jwt-auth.guard";
 
-@Controller('auth')
+@Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('oauth/:provider/start')
+  @Post("oauth/:provider/start")
   async startOAuth(
-    @Param('provider') provider: OAuthProvider,
+    @Param("provider") provider: OAuthProvider,
     @Body() request: OAuthStartRequestDto,
-    @Headers('x-request-id') requestId?: string,
+    @Headers("x-request-id") requestId?: string,
   ): Promise<ApiEnvelope<OAuthStartResponseDto>> {
     const data = await this.authService.startOAuth(provider, request);
 
     return createEnvelope(data, requestId);
   }
 
-  @Post('oauth/:provider/callback')
+  @Get("oauth/:provider/callback")
+  redirectOAuthCallback(
+    @Param("provider") provider: OAuthProvider,
+    @Query() request: OAuthCallbackRequestDto,
+    @Res() response: RedirectResponse,
+  ): void {
+    response.redirect(
+      this.authService.buildOAuthAppRedirect(provider, request),
+    );
+  }
+
+  @Post("oauth/:provider/callback")
   async completeOAuth(
-    @Param('provider') provider: OAuthProvider,
+    @Param("provider") provider: OAuthProvider,
     @Body() request: OAuthCallbackRequestDto,
-    @Headers('x-request-id') requestId?: string,
+    @Headers("x-request-id") requestId?: string,
   ): Promise<ApiEnvelope<SessionResponseDto>> {
     const data = await this.authService.completeOAuth(provider, request);
 
     return createEnvelope(data, requestId);
   }
 
-  @Post('refresh')
+  @Post("refresh")
   async refreshSession(
     @Body() request: RefreshSessionRequestDto,
-    @Headers('x-request-id') requestId?: string,
+    @Headers("x-request-id") requestId?: string,
   ): Promise<ApiEnvelope<SessionResponseDto>> {
     const data = await this.authService.refreshSession(request);
 
@@ -52,14 +74,18 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('logout')
+  @Post("logout")
   async logout(
     @Req() request: RequestWithCurrentUser,
     @Body() body: LogoutRequestDto,
-    @Headers('x-request-id') requestId?: string,
+    @Headers("x-request-id") requestId?: string,
   ): Promise<ApiEnvelope<LogoutResponseDto>> {
     const data = await this.authService.logout(request, body);
 
     return createEnvelope(data, requestId);
   }
+}
+
+interface RedirectResponse {
+  redirect(url: string): void;
 }

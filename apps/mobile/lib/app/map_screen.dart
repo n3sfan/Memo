@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/auth_controller.dart';
 import '../data/models/models.dart';
 import '../map/map.dart';
 import 'map_view_controller.dart';
@@ -53,6 +54,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   },
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
+          ),
+          IconButton(
+            key: const Key('logout_button'),
+            tooltip: 'Log out',
+            onPressed: () => ref
+                .read<AuthController>(authControllerProvider.notifier)
+                .logout(),
+            icon: const Icon(Icons.logout),
           ),
         ],
       ),

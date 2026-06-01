@@ -1,41 +1,47 @@
-import { INestApplication } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { Test } from '@nestjs/testing';
-import request = require('supertest');
+import { INestApplication } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { Test } from "@nestjs/testing";
+import request = require("supertest");
 
-import { ApiExceptionFilter } from '../../src/common/api-exception.filter';
-import { InMemoryKeyValueStore, KEY_VALUE_STORE } from '../../src/infra/redis';
-import { AuthController } from '../../src/modules/auth/auth.controller';
-import { AuthService } from '../../src/modules/auth/auth.service';
-import { JwtAuthGuard } from '../../src/modules/auth/jwt-auth.guard';
+import { ApiExceptionFilter } from "../../src/common/api-exception.filter";
+import { InMemoryKeyValueStore, KEY_VALUE_STORE } from "../../src/infra/redis";
+import { AuthController } from "../../src/modules/auth/auth.controller";
+import { AuthService } from "../../src/modules/auth/auth.service";
+import { JwtAuthGuard } from "../../src/modules/auth/jwt-auth.guard";
 import {
   OAUTH_PROVIDER_CLIENTS,
   OAuthProviderClient,
   OAuthProviderRegistry,
-} from '../../src/modules/auth/oauth';
-import { AUTH_USER_REPOSITORY, AuthUserRepository } from '../../src/modules/auth/repositories';
-import { AuthTokenService, OAuthStateStore } from '../../src/modules/auth/session';
+} from "../../src/modules/auth/oauth";
+import {
+  AUTH_USER_REPOSITORY,
+  AuthUserRepository,
+} from "../../src/modules/auth/repositories";
+import {
+  AuthTokenService,
+  OAuthStateStore,
+} from "../../src/modules/auth/session";
 
-describe('Auth API', () => {
+describe("Auth API", () => {
   let app: INestApplication;
   let google: jest.Mocked<OAuthProviderClient>;
   let apple: jest.Mocked<OAuthProviderClient>;
   let userRepository: jest.Mocked<AuthUserRepository>;
 
   beforeEach(async () => {
-    process.env.JWT_ACCESS_SECRET = 'auth-api-access-secret';
-    process.env.JWT_REFRESH_SECRET = 'auth-api-refresh-secret';
-    google = createProvider('google');
-    apple = createProvider('apple');
+    process.env.JWT_ACCESS_SECRET = "auth-api-access-secret";
+    process.env.JWT_REFRESH_SECRET = "auth-api-refresh-secret";
+    google = createProvider("google");
+    apple = createProvider("apple");
     userRepository = {
       upsertOAuthUser: jest.fn().mockResolvedValue({
         created: true,
         user: {
-          id: 'user-1',
-          provider: 'google',
-          providerUserId: 'google-user-1',
-          email: 'memo@example.com',
-          displayName: 'Memo User',
+          id: "user-1",
+          provider: "google",
+          providerUserId: "google-user-1",
+          email: "memo@example.com",
+          displayName: "Memo User",
           avatarUrl: null,
         },
       }),
@@ -66,7 +72,7 @@ describe('Auth API', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix("api/v1");
     app.useGlobalFilters(new ApiExceptionFilter());
     await app.init();
   });
@@ -75,47 +81,60 @@ describe('Auth API', () => {
     await app.close();
   });
 
-  it('returns Google and Apple authorization URLs with state', async () => {
+  it("returns Google and Apple authorization URLs with state", async () => {
     const googleResponse = await request(app.getHttpServer())
-      .post('/api/v1/auth/oauth/google/start')
-      .set('x-request-id', 'req_google_start')
-      .send({ redirectUri: 'memo://oauth/google' })
+      .post("/api/v1/auth/oauth/google/start")
+      .set("x-request-id", "req_google_start")
+      .send({ redirectUri: "memo://oauth/google" })
       .expect(201);
     const appleResponse = await request(app.getHttpServer())
-      .post('/api/v1/auth/oauth/apple/start')
-      .set('x-request-id', 'req_apple_start')
-      .send({ redirectUri: 'memo://oauth/apple' })
+      .post("/api/v1/auth/oauth/apple/start")
+      .set("x-request-id", "req_apple_start")
+      .send({ redirectUri: "memo://oauth/apple" })
       .expect(201);
 
     expect(googleResponse.body).toEqual({
       data: {
-        authorizationUrl: expect.stringContaining('google.example'),
+        authorizationUrl: expect.stringContaining("google.example"),
         state: expect.stringMatching(/^oauth_/),
       },
-      requestId: 'req_google_start',
+      requestId: "req_google_start",
     });
     expect(appleResponse.body).toEqual({
       data: {
-        authorizationUrl: expect.stringContaining('apple.example'),
+        authorizationUrl: expect.stringContaining("apple.example"),
         state: expect.stringMatching(/^oauth_/),
       },
-      requestId: 'req_apple_start',
+      requestId: "req_apple_start",
     });
   });
 
-  it('returns a session after successful callback', async () => {
+  it("redirects browser OAuth callbacks back to the app route", async () => {
+    process.env.OAUTH_APP_REDIRECT_BASE_URL = "http://localhost:5000";
+
+    await request(app.getHttpServer())
+      .get("/api/v1/auth/oauth/google/callback")
+      .query({ code: "oauth-code", state: "oauth-state" })
+      .expect(302)
+      .expect(
+        "location",
+        "http://localhost:5000/oauth/google?code=oauth-code&state=oauth-state",
+      );
+  });
+
+  it("returns a session after successful callback", async () => {
     const start = await request(app.getHttpServer())
-      .post('/api/v1/auth/oauth/google/start')
-      .send({ redirectUri: 'memo://oauth/google' })
+      .post("/api/v1/auth/oauth/google/start")
+      .send({ redirectUri: "memo://oauth/google" })
       .expect(201);
 
     const response = await request(app.getHttpServer())
-      .post('/api/v1/auth/oauth/google/callback')
-      .set('x-request-id', 'req_google_callback')
+      .post("/api/v1/auth/oauth/google/callback")
+      .set("x-request-id", "req_google_callback")
       .send({
-        code: 'oauth-code',
+        code: "oauth-code",
         state: start.body.data.state,
-        redirectUri: 'memo://oauth/google',
+        redirectUri: "memo://oauth/google",
       })
       .expect(201);
 
@@ -125,28 +144,28 @@ describe('Auth API', () => {
         refreshToken: expect.any(String),
         expiresIn: 900,
         user: {
-          id: 'user-1',
-          email: 'memo@example.com',
-          displayName: 'Memo User',
+          id: "user-1",
+          email: "memo@example.com",
+          displayName: "Memo User",
           avatarUrl: null,
         },
       },
-      requestId: 'req_google_callback',
+      requestId: "req_google_callback",
     });
   });
 
-  it('returns oauth_failed and no token when callback is cancelled', async () => {
+  it("returns oauth_failed and no token when callback is cancelled", async () => {
     const response = await request(app.getHttpServer())
-      .post('/api/v1/auth/oauth/google/callback')
-      .set('x-request-id', 'req_google_cancelled')
-      .send({ error: 'access_denied', state: 'oauth_state' })
+      .post("/api/v1/auth/oauth/google/callback")
+      .set("x-request-id", "req_google_cancelled")
+      .send({ error: "access_denied", state: "oauth_state" })
       .expect(401);
 
     expect(response.body).toEqual({
-      error: 'oauth_failed',
-      message: 'OAuth provider rejected the request.',
-      details: { provider: 'google', error: 'access_denied' },
-      requestId: 'req_google_cancelled',
+      error: "oauth_failed",
+      message: "OAuth provider rejected the request.",
+      details: { provider: "google", error: "access_denied" },
+      requestId: "req_google_cancelled",
     });
     expect(response.body.data).toBeUndefined();
     expect(userRepository.upsertOAuthUser).not.toHaveBeenCalled();
@@ -154,7 +173,7 @@ describe('Auth API', () => {
 });
 
 function createProvider(
-  provider: 'google' | 'apple',
+  provider: "google" | "apple",
 ): jest.Mocked<OAuthProviderClient> {
   return {
     provider,
@@ -166,8 +185,8 @@ function createProvider(
       profile: {
         provider,
         providerUserId: `${provider}-user-1`,
-        email: 'memo@example.com',
-        displayName: 'Memo User',
+        email: "memo@example.com",
+        displayName: "Memo User",
         avatarUrl: null,
       },
     })),

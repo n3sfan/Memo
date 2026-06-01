@@ -103,6 +103,14 @@ Response:
 }
 ```
 
+Browser OAuth callback redirect:
+
+```http
+GET /api/v1/auth/oauth/:provider/callback?code=...&state=...
+```
+
+The backend redirects the browser to the mobile/web app callback route configured by `OAUTH_APP_REDIRECT_BASE_URL`, preserving `code`, `state` and OAuth error query fields. The app then completes the exchange with the POST callback below.
+
 Complete OAuth:
 
 ```http

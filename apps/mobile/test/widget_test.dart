@@ -3,7 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:memory_map_mobile/app/map_screen.dart';
+import 'package:memory_map_mobile/app/router.dart';
+import 'package:memory_map_mobile/auth/auth_controller.dart';
+import 'package:memory_map_mobile/auth/token_storage.dart';
 import 'package:memory_map_mobile/data/models/models.dart';
+import 'package:memory_map_mobile/data/repository_providers.dart';
+import 'package:memory_map_mobile/main.dart';
 import 'package:memory_map_mobile/map/map.dart';
 
 void main() {
@@ -126,6 +131,102 @@ void main() {
 
     expect(find.text('new-pin-route 10.123456 106.654321'), findsOneWidget);
   });
+
+  testWidgets('starts at login when no session exists',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_testApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Sign in to Memo'), findsWidgets);
+    expect(find.byKey(const Key('login_google_button')), findsOneWidget);
+  });
+
+  testWidgets('mock Google login opens the Memory Map shell',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_testApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byKey(const Key('login_google_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byIcon(Icons.add_location_alt_outlined), findsOneWidget);
+    expect(find.byKey(const Key('logout_button')), findsOneWidget);
+  });
+
+  testWidgets('web OAuth callback opens the Memory Map shell',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      _testApp(initialLocation: '/oauth/google?code=mock_code&state=mock_state'),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byIcon(Icons.add_location_alt_outlined), findsOneWidget);
+    expect(find.byKey(const Key('logout_button')), findsOneWidget);
+    expect(find.text('Sign in to Memo'), findsNothing);
+  });
+
+  testWidgets('logout returns to login', (WidgetTester tester) async {
+    await tester.pumpWidget(_testApp());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byKey(const Key('login_google_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(find.byKey(const Key('logout_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Sign in to Memo'), findsWidgets);
+  });
+}
+
+Widget _testApp({String? initialLocation}) {
+  return ProviderScope(
+    overrides: [
+      tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
+      oauthRedirectStreamProvider
+          .overrideWith((ref) => const Stream<Uri>.empty()),
+    ],
+    child: _RouteStarterApp(initialLocation: initialLocation),
+  );
+}
+
+class _RouteStarterApp extends ConsumerStatefulWidget {
+  const _RouteStarterApp({this.initialLocation});
+
+  final String? initialLocation;
+
+  @override
+  ConsumerState<_RouteStarterApp> createState() => _RouteStarterAppState();
+}
+
+class _RouteStarterAppState extends ConsumerState<_RouteStarterApp> {
+  bool _didNavigate = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? initialLocation = widget.initialLocation;
+    if (!_didNavigate && initialLocation != null) {
+      _didNavigate = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(appRouterProvider).go(initialLocation);
+      });
+    }
+
+    return const MemoryMapApp();
+  }
 }
 
 Widget _buildFakeMapView(BuildContext context, MapViewConfig config) {

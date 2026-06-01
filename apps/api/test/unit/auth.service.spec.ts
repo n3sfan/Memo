@@ -1,24 +1,27 @@
-import { HttpStatus } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { HttpStatus } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 
-import { ApiException } from '../../src/common/api-error';
-import { InMemoryKeyValueStore } from '../../src/infra/redis';
-import { AuthService } from '../../src/modules/auth/auth.service';
-import { OAuthProviderRegistry } from '../../src/modules/auth/oauth';
-import { OAuthProviderClient } from '../../src/modules/auth/oauth/oauth-provider.port';
-import { AuthUserRepository } from '../../src/modules/auth/repositories';
-import { AuthTokenService, OAuthStateStore } from '../../src/modules/auth/session';
+import { ApiException } from "../../src/common/api-error";
+import { InMemoryKeyValueStore } from "../../src/infra/redis";
+import { AuthService } from "../../src/modules/auth/auth.service";
+import { OAuthProviderRegistry } from "../../src/modules/auth/oauth";
+import { OAuthProviderClient } from "../../src/modules/auth/oauth/oauth-provider.port";
+import { AuthUserRepository } from "../../src/modules/auth/repositories";
+import {
+  AuthTokenService,
+  OAuthStateStore,
+} from "../../src/modules/auth/session";
 
 const user = {
-  id: 'user-1',
-  provider: 'google',
-  providerUserId: 'google-user-1',
-  email: 'memo@example.com',
-  displayName: 'Memo User',
+  id: "user-1",
+  provider: "google",
+  providerUserId: "google-user-1",
+  email: "memo@example.com",
+  displayName: "Memo User",
   avatarUrl: null,
 };
 
-describe('AuthService', () => {
+describe("AuthService", () => {
   let google: jest.Mocked<OAuthProviderClient>;
   let apple: jest.Mocked<OAuthProviderClient>;
   let userRepository: jest.Mocked<AuthUserRepository>;
@@ -26,11 +29,11 @@ describe('AuthService', () => {
   let service: AuthService;
 
   beforeEach(() => {
-    process.env.JWT_ACCESS_SECRET = 'auth-service-access-secret';
-    process.env.JWT_REFRESH_SECRET = 'auth-service-refresh-secret';
+    process.env.JWT_ACCESS_SECRET = "auth-service-access-secret";
+    process.env.JWT_REFRESH_SECRET = "auth-service-refresh-secret";
 
-    google = createProvider('google');
-    apple = createProvider('apple');
+    google = createProvider("google");
+    apple = createProvider("apple");
     userRepository = {
       upsertOAuthUser: jest.fn().mockResolvedValue({ user, created: true }),
     };
@@ -45,91 +48,104 @@ describe('AuthService', () => {
     );
   });
 
-  it('starts Google and Apple through the same provider contract', async () => {
-    const googleStart = await service.startOAuth('google', {
-      redirectUri: 'memo://oauth/google',
+  it("starts Google and Apple through the same provider contract", async () => {
+    const googleStart = await service.startOAuth("google", {
+      redirectUri: "memo://oauth/google",
     });
-    const appleStart = await service.startOAuth('apple', {
-      redirectUri: 'memo://oauth/apple',
+    const appleStart = await service.startOAuth("apple", {
+      redirectUri: "memo://oauth/apple",
     });
 
     expect(google.start).toHaveBeenCalledWith({
       state: googleStart.state,
-      redirectUri: 'memo://oauth/google',
+      redirectUri: "memo://oauth/google",
     });
     expect(apple.start).toHaveBeenCalledWith({
       state: appleStart.state,
-      redirectUri: 'memo://oauth/apple',
+      redirectUri: "memo://oauth/apple",
     });
     expect(googleStart.authorizationUrl).toContain(googleStart.state);
     expect(appleStart.authorizationUrl).toContain(appleStart.state);
   });
 
-  it('completes OAuth, upserts the user, and returns a session', async () => {
-    const start = await service.startOAuth('google', {
-      redirectUri: 'memo://oauth/google',
+  it("completes OAuth, upserts the user, and returns a session", async () => {
+    const start = await service.startOAuth("google", {
+      redirectUri: "memo://oauth/google",
     });
 
-    const session = await service.completeOAuth('google', {
-      code: 'oauth-code',
+    const session = await service.completeOAuth("google", {
+      code: "oauth-code",
       state: start.state,
-      redirectUri: 'memo://oauth/google',
+      redirectUri: "memo://oauth/google",
     });
 
     expect(google.complete).toHaveBeenCalledWith({
-      code: 'oauth-code',
+      code: "oauth-code",
       state: start.state,
-      redirectUri: 'memo://oauth/google',
+      redirectUri: "memo://oauth/google",
     });
     expect(userRepository.upsertOAuthUser).toHaveBeenCalledWith({
-      provider: 'google',
-      providerUserId: 'google-user-1',
-      email: 'memo@example.com',
-      displayName: 'Memo User',
+      provider: "google",
+      providerUserId: "google-user-1",
+      email: "memo@example.com",
+      displayName: "Memo User",
       avatarUrl: null,
     });
     expect(session.user).toEqual({
-      id: 'user-1',
-      email: 'memo@example.com',
-      displayName: 'Memo User',
+      id: "user-1",
+      email: "memo@example.com",
+      displayName: "Memo User",
       avatarUrl: null,
     });
     await expect(
       tokenService.verifyAccessToken(session.accessToken),
     ).resolves.toMatchObject({
       user: {
-        id: 'user-1',
-        email: 'memo@example.com',
-        displayName: 'Memo User',
-        provider: 'google',
+        id: "user-1",
+        email: "memo@example.com",
+        displayName: "Memo User",
+        provider: "google",
       },
     });
   });
 
-  it('rejects reused or invalid state before provider callback', async () => {
+  it("rejects reused or invalid state before provider callback", async () => {
     await expectApiException(
-      service.completeOAuth('google', { code: 'code', state: 'bad-state' }),
+      service.completeOAuth("google", { code: "code", state: "bad-state" }),
       HttpStatus.UNAUTHORIZED,
-      'oauth_failed',
+      "oauth_failed",
     );
 
     expect(google.complete).not.toHaveBeenCalled();
   });
 
-  it('maps cancelled provider callback to oauth_failed without tokens', async () => {
+  it("maps cancelled provider callback to oauth_failed without tokens", async () => {
     await expectApiException(
-      service.completeOAuth('google', {
-        error: 'access_denied',
-        state: 'state',
+      service.completeOAuth("google", {
+        error: "access_denied",
+        state: "state",
       }),
       HttpStatus.UNAUTHORIZED,
-      'oauth_failed',
+      "oauth_failed",
     );
 
     expect(userRepository.upsertOAuthUser).not.toHaveBeenCalled();
   });
 
-  it('refreshes a session and revokes the used refresh token', async () => {
+  it("builds app redirect URLs for browser OAuth callbacks", () => {
+    process.env.OAUTH_APP_REDIRECT_BASE_URL = "http://localhost:5000";
+
+    expect(
+      service.buildOAuthAppRedirect("google", {
+        code: "oauth-code",
+        state: "oauth-state",
+      }),
+    ).toBe(
+      "http://localhost:5000/oauth/google?code=oauth-code&state=oauth-state",
+    );
+  });
+
+  it("refreshes a session and revokes the used refresh token", async () => {
     const session = await tokenService.createSession(user);
     const refreshed = await service.refreshSession({
       refreshToken: session.refreshToken,
@@ -137,13 +153,13 @@ describe('AuthService', () => {
 
     await expect(
       tokenService.verifyRefreshToken(session.refreshToken),
-    ).rejects.toMatchObject({ apiErrorCode: 'unauthorized' });
+    ).rejects.toMatchObject({ apiErrorCode: "unauthorized" });
     await expect(
       tokenService.verifyRefreshToken(refreshed.refreshToken),
-    ).resolves.toMatchObject({ user: { id: 'user-1' } });
+    ).resolves.toMatchObject({ user: { id: "user-1" } });
   });
 
-  it('logout revokes current access token and provided refresh token', async () => {
+  it("logout revokes current access token and provided refresh token", async () => {
     const session = await tokenService.createSession(user);
     const access = await tokenService.verifyAccessToken(session.accessToken);
 
@@ -160,15 +176,15 @@ describe('AuthService', () => {
 
     await expect(
       tokenService.verifyAccessToken(session.accessToken),
-    ).rejects.toMatchObject({ apiErrorCode: 'unauthorized' });
+    ).rejects.toMatchObject({ apiErrorCode: "unauthorized" });
     await expect(
       tokenService.verifyRefreshToken(session.refreshToken),
-    ).rejects.toMatchObject({ apiErrorCode: 'unauthorized' });
+    ).rejects.toMatchObject({ apiErrorCode: "unauthorized" });
   });
 });
 
 function createProvider(
-  provider: 'google' | 'apple',
+  provider: "google" | "apple",
 ): jest.Mocked<OAuthProviderClient> {
   return {
     provider,
@@ -180,8 +196,8 @@ function createProvider(
       profile: {
         provider,
         providerUserId: `${provider}-user-1`,
-        email: 'memo@example.com',
-        displayName: 'Memo User',
+        email: "memo@example.com",
+        displayName: "Memo User",
         avatarUrl: null,
       },
     })),
@@ -204,7 +220,7 @@ async function expectApiException(
 ): Promise<void> {
   try {
     await promise;
-    throw new Error('Expected ApiException.');
+    throw new Error("Expected ApiException.");
   } catch (error) {
     expect(error).toBeInstanceOf(ApiException);
     expect((error as ApiException).getStatus()).toBe(status);

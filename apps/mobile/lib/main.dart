@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/router.dart';
+import 'auth/auth_controller.dart';
 
 void main() {
   runApp(const ProviderScope(child: MemoryMapApp()));
@@ -13,7 +14,18 @@ class MemoryMapApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AsyncValue<Uri>>(oauthRedirectStreamProvider, (previous, next) {
+      next.whenData((Uri uri) {
+        ref
+            .read<AuthController>(authControllerProvider.notifier)
+            .handleOAuthRedirect(uri);
+      });
+    });
+
+    final AuthState authState = ref.watch(authControllerProvider);
+
     return MaterialApp.router(
+      key: ValueKey<AuthStatus>(authState.status),
       title: 'Memory Map',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
@@ -25,7 +37,7 @@ class MemoryMapApp extends ConsumerWidget {
         Locale('vi'),
         Locale('en'),
       ],
-      routerConfig: appRouter,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }
