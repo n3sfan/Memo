@@ -249,8 +249,8 @@ class _MapStatusBanner extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 20),
-          const SizedBox(width: 10),
+          Icon(icon, size: 18),
+          const SizedBox(width: 8),
           Flexible(child: Text(label)),
           if (action != null) ...<Widget>[
             const SizedBox(width: 8),
