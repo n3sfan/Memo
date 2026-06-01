@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/models/models.dart';
 import 'map_screen.dart';
 import 'pin_detail_screen.dart';
 import 'pin_editor_screen.dart';
@@ -19,7 +20,18 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/pins/new',
-      builder: (context, state) => const PinEditorScreen(),
+      builder: (context, state) {
+        return PinEditorScreen(
+          initialCoordinates: _coordinatesFromQuery(state.uri),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/pins/:pinId/edit',
+      builder: (context, state) {
+        final pinId = state.pathParameters['pinId'] ?? '';
+        return PinEditorScreen(pinId: pinId);
+      },
     ),
     GoRoute(
       path: '/pins/:pinId',
@@ -37,6 +49,16 @@ final appRouter = GoRouter(
     ),
   ],
 );
+
+Coordinates? _coordinatesFromQuery(Uri uri) {
+  final double? lat = double.tryParse(uri.queryParameters['lat'] ?? '');
+  final double? lng = double.tryParse(uri.queryParameters['lng'] ?? '');
+  if (lat == null || lng == null) {
+    return null;
+  }
+
+  return Coordinates(lat: lat, lng: lng);
+}
 
 class PublicSharedPinScreen extends StatelessWidget {
   const PublicSharedPinScreen({required this.token, super.key});
