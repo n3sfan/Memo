@@ -2,18 +2,34 @@ import { ExecutionContext, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { ApiException } from '../../src/common/api-error';
+import { InMemoryKeyValueStore } from '../../src/infra/redis';
 import { RequestWithCurrentUser } from '../../src/modules/auth/current-user';
 import { JwtAuthGuard } from '../../src/modules/auth/jwt-auth.guard';
+import { AuthTokenService } from '../../src/modules/auth/session';
+
+const baseUser = {
+  id: 'user-1',
+  provider: 'google',
+  providerUserId: 'google-user-1',
+  email: 'memo@example.com',
+  displayName: 'Memo User',
+  avatarUrl: null,
+};
 
 describe('JwtAuthGuard', () => {
   const secret = 'unit-test-access-secret';
   let jwtService: JwtService;
+  let tokenService: AuthTokenService;
+  let keyValueStore: InMemoryKeyValueStore;
   let guard: JwtAuthGuard;
 
   beforeEach(() => {
     process.env.JWT_ACCESS_SECRET = secret;
+    process.env.JWT_REFRESH_SECRET = 'unit-test-refresh-secret';
     jwtService = new JwtService();
-    guard = new JwtAuthGuard(jwtService);
+    keyValueStore = new InMemoryKeyValueStore();
+    tokenService = new AuthTokenService(jwtService, keyValueStore);
+    guard = new JwtAuthGuard(tokenService);
   });
 
   it('rejects requests without a bearer token', async () => {
@@ -32,6 +48,8 @@ describe('JwtAuthGuard', () => {
     const token = jwtService.sign(
       {
         sub: 'user-1',
+        jti: 'token-1',
+        typ: 'access',
       },
       {
         secret: 'wrong-secret',
@@ -49,6 +67,8 @@ describe('JwtAuthGuard', () => {
     const token = jwtService.sign(
       {
         sub: 'user-1',
+        jti: 'token-1',
+        typ: 'access',
         exp: Math.floor(Date.now() / 1000) - 60,
       },
       {
@@ -63,20 +83,20 @@ describe('JwtAuthGuard', () => {
     );
   });
 
-  it('attaches the current user for a valid token', async () => {
+  it('rejects revoked access tokens', async () => {
+    const token = await tokenService.createSession(baseUser);
+    const verified = await tokenService.verifyAccessToken(token.accessToken);
+    await tokenService.revoke('access', verified.jti, verified.expiresAt);
+
+    await expectUnauthorized(
+      createContext({ authorization: `Bearer ${token.accessToken}` }),
+    );
+  });
+
+  it('attaches current user and token metadata for a valid token', async () => {
+    const session = await tokenService.createSession(baseUser);
     const request = createRequest({
-      authorization: `Bearer ${jwtService.sign(
-        {
-          sub: 'user-1',
-          email: 'memo@example.com',
-          displayName: 'Memo User',
-          provider: 'google',
-        },
-        {
-          secret,
-          expiresIn: '1h',
-        },
-      )}`,
+      authorization: `Bearer ${session.accessToken}`,
     });
 
     await expect(guard.canActivate(createContextFromRequest(request))).resolves.toBe(
@@ -89,6 +109,8 @@ describe('JwtAuthGuard', () => {
       displayName: 'Memo User',
       provider: 'google',
     });
+    expect(request.accessTokenJti).toEqual(expect.any(String));
+    expect(request.accessTokenExpiresAt).toBeInstanceOf(Date);
   });
 
   async function expectUnauthorized(context: ExecutionContext): Promise<void> {

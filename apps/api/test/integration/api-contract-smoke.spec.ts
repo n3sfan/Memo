@@ -4,7 +4,9 @@ import { Test } from '@nestjs/testing';
 import request = require('supertest');
 
 import { ApiExceptionFilter } from '../../src/common/api-exception.filter';
+import { InMemoryKeyValueStore, KEY_VALUE_STORE } from '../../src/infra/redis';
 import { JwtAuthGuard } from '../../src/modules/auth/jwt-auth.guard';
+import { AuthTokenService } from '../../src/modules/auth/session';
 import { MapsController } from '../../src/modules/maps/maps.controller';
 import { MapsService } from '../../src/modules/maps/maps.service';
 import { PinsController } from '../../src/modules/pins/pins.controller';
@@ -14,7 +16,7 @@ import { TimelineService } from '../../src/modules/timeline/timeline.service';
 
 describe('API contract smoke tests', () => {
   let app: INestApplication;
-  let jwtService: JwtService;
+  let tokenService: AuthTokenService;
   let mapsService: jest.Mocked<MapsService>;
   let pinsService: jest.Mocked<PinsService>;
   let timelineService: jest.Mocked<TimelineService>;
@@ -29,6 +31,11 @@ describe('API contract smoke tests', () => {
       providers: [
         JwtAuthGuard,
         JwtService,
+        AuthTokenService,
+        {
+          provide: KEY_VALUE_STORE,
+          useValue: new InMemoryKeyValueStore(),
+        },
         {
           provide: MapsService,
           useValue: mapsService,
@@ -44,7 +51,7 @@ describe('API contract smoke tests', () => {
       ],
     }).compile();
 
-    jwtService = moduleRef.get(JwtService);
+    tokenService = moduleRef.get(AuthTokenService);
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
     app.useGlobalFilters(new ApiExceptionFilter());
@@ -69,7 +76,7 @@ describe('API contract smoke tests', () => {
 
     const response = await request(app.getHttpServer())
       .get('/api/v1/maps')
-      .set('authorization', `Bearer ${accessToken()}`)
+      .set('authorization', `Bearer ${await accessToken()}`)
       .set('x-request-id', 'req_contract_success')
       .expect(200);
 
@@ -132,6 +139,26 @@ describe('API contract smoke tests', () => {
     expect(mapsService.listMaps).not.toHaveBeenCalled();
   });
 
+  it('rejects revoked bearer tokens before feature logic runs', async () => {
+    const token = await accessToken();
+    const verified = await tokenService.verifyAccessToken(token);
+    await tokenService.revoke('access', verified.jti, verified.expiresAt);
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/maps')
+      .set('authorization', `Bearer ${token}`)
+      .set('x-request-id', 'req_contract_revoked_token')
+      .expect(401);
+
+    expect(response.body).toEqual({
+      error: 'unauthorized',
+      message: 'Revoked access token.',
+      details: {},
+      requestId: 'req_contract_revoked_token',
+    });
+    expect(mapsService.listMaps).not.toHaveBeenCalled();
+  });
+
   it('keeps skeleton protected routes behind auth and maps 501 consistently', async () => {
     mapsService.getDefaultMap.mockImplementation(() => {
       throw new NotImplementedException(
@@ -141,7 +168,7 @@ describe('API contract smoke tests', () => {
 
     const response = await request(app.getHttpServer())
       .get('/api/v1/maps/default')
-      .set('authorization', `Bearer ${accessToken()}`)
+      .set('authorization', `Bearer ${await accessToken()}`)
       .set('x-request-id', 'req_contract_not_implemented')
       .expect(501);
 
@@ -160,7 +187,7 @@ describe('API contract smoke tests', () => {
 
     const response = await request(app.getHttpServer())
       .get('/api/v1/maps/map_1/pins?bbox=106,10,109,12')
-      .set('authorization', `Bearer ${accessToken()}`)
+      .set('authorization', `Bearer ${await accessToken()}`)
       .set('x-request-id', 'req_contract_bbox')
       .expect(200);
 
@@ -181,7 +208,7 @@ describe('API contract smoke tests', () => {
 
     const response = await request(app.getHttpServer())
       .get('/api/v1/maps/map_1/timeline?order=desc&limit=50')
-      .set('authorization', `Bearer ${accessToken()}`)
+      .set('authorization', `Bearer ${await accessToken()}`)
       .set('x-request-id', 'req_contract_timeline')
       .expect(200);
 
@@ -195,18 +222,17 @@ describe('API contract smoke tests', () => {
     });
   });
 
-  function accessToken(): string {
-    return jwtService.sign(
-      {
-        sub: 'user_1',
-        email: 'user@example.com',
-        displayName: 'Memo User',
-      },
-      {
-        secret: process.env.JWT_ACCESS_SECRET,
-        expiresIn: '5m',
-      },
-    );
+  async function accessToken(): Promise<string> {
+    const session = await tokenService.createSession({
+      id: 'user_1',
+      provider: 'google',
+      providerUserId: 'google_user_1',
+      email: 'user@example.com',
+      displayName: 'Memo User',
+      avatarUrl: null,
+    });
+
+    return session.accessToken;
   }
 });
 

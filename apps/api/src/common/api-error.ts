@@ -48,6 +48,18 @@ export function throwUnauthorized(
   );
 }
 
+export function throwOAuthFailed(
+  message = 'OAuth authentication failed.',
+  details: ApiErrorDetails = {},
+): never {
+  throw new ApiException(
+    HttpStatus.UNAUTHORIZED,
+    'oauth_failed',
+    message,
+    details,
+  );
+}
+
 export function throwForbidden(
   message = 'You do not have access to this resource.',
   details: ApiErrorDetails = {},

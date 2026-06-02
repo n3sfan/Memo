@@ -10,9 +10,12 @@ export class OAuthStartResponseDto {
 }
 
 export class OAuthCallbackRequestDto {
-  code!: string;
-  state!: string;
+  code?: string;
+  state?: string;
   redirectUri?: string;
+  error?: string;
+  errorDescription?: string;
+  error_description?: string;
 }
 
 export class RefreshSessionRequestDto {
@@ -31,6 +34,10 @@ export class SessionResponseDto {
   refreshToken!: string;
   expiresIn!: number;
   user!: UserProfileDto;
+}
+
+export class LogoutRequestDto {
+  refreshToken?: string;
 }
 
 export class LogoutResponseDto {

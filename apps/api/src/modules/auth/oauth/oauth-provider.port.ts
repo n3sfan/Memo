@@ -3,6 +3,7 @@ import { OAuthProvider } from '../dto/auth.dto';
 export const OAUTH_PROVIDER_CLIENTS = Symbol('OAUTH_PROVIDER_CLIENTS');
 
 export interface OAuthStartInput {
+  state: string;
   redirectUri?: string;
 }
 

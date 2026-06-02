@@ -1,32 +1,21 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 
-import { throwInternalError, throwUnauthorized } from '../../common/api-error';
-import { CurrentUser, RequestWithCurrentUser } from './current-user';
-
-interface JwtAccessTokenPayload {
-  sub?: unknown;
-  id?: unknown;
-  email?: unknown;
-  displayName?: unknown;
-  provider?: unknown;
-}
+import { throwUnauthorized } from '../../common/api-error';
+import { RequestWithCurrentUser } from './current-user';
+import { AuthTokenService } from './session';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(private readonly tokenService: AuthTokenService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithCurrentUser>();
     const token = this.extractBearerToken(request);
-    const secret = process.env.JWT_ACCESS_SECRET;
+    const verified = await this.tokenService.verifyAccessToken(token);
 
-    if (!secret) {
-      throwInternalError('JWT access secret is not configured.');
-    }
-
-    const payload = await this.verifyToken(token, secret);
-    request.user = this.userFromPayload(payload);
+    request.user = verified.user;
+    request.accessTokenJti = verified.jti;
+    request.accessTokenExpiresAt = verified.expiresAt;
 
     return true;
   }
@@ -48,38 +37,5 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     return token;
-  }
-
-  private async verifyToken(
-    token: string,
-    secret: string,
-  ): Promise<JwtAccessTokenPayload> {
-    try {
-      return await this.jwtService.verifyAsync<JwtAccessTokenPayload>(token, {
-        secret,
-        algorithms: ['HS256'],
-      });
-    } catch {
-      throwUnauthorized('Invalid or expired access token.');
-    }
-  }
-
-  private userFromPayload(payload: JwtAccessTokenPayload): CurrentUser {
-    const id = typeof payload.sub === 'string' ? payload.sub : payload.id;
-
-    if (typeof id !== 'string' || !id) {
-      throwUnauthorized('Access token subject is invalid.');
-    }
-
-    return {
-      id,
-      email: this.optionalString(payload.email),
-      displayName: this.optionalString(payload.displayName),
-      provider: this.optionalString(payload.provider),
-    };
-  }
-
-  private optionalString(value: unknown): string | null {
-    return typeof value === 'string' ? value : null;
   }
 }

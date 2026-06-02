@@ -20,6 +20,10 @@ final useMockRepositoriesProvider = Provider<bool>((ref) {
   return const bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
 });
 
+final useRealAuthProvider = Provider<bool>((ref) {
+  return const bool.fromEnvironment('USE_REAL_AUTH');
+});
+
 final apiConfigProvider = Provider<ApiConfig>((ref) {
   return const ApiConfig();
 });
@@ -57,7 +61,8 @@ final uploadQueueDaoProvider = Provider<UploadQueueDao>((ref) {
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  if (ref.watch(useMockRepositoriesProvider)) {
+  if (!ref.watch(useRealAuthProvider) &&
+      ref.watch(useMockRepositoriesProvider)) {
     return FakeAuthRepository(ref.watch(tokenStorageProvider));
   }
 

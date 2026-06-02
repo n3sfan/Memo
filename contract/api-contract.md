@@ -75,6 +75,113 @@ Status conventions:
 
 ## Auth
 
+Start OAuth:
+
+```http
+POST /api/v1/auth/oauth/:provider/start
+```
+
+`:provider` is `google` or `apple`.
+
+Body:
+
+```json
+{
+  "redirectUri": "memo://oauth/callback"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "authorizationUrl": "https://...",
+    "state": "oauth_..."
+  },
+  "requestId": "req_..."
+}
+```
+
+Browser OAuth callback redirect:
+
+```http
+GET /api/v1/auth/oauth/:provider/callback?code=...&state=...
+```
+
+Providers that require `response_mode=form_post` may call the same callback
+with a form-encoded POST:
+
+```http
+POST /api/v1/auth/oauth/:provider/callback
+Content-Type: application/x-www-form-urlencoded
+```
+
+When the callback comes from the browser/provider, the backend redirects to the
+mobile/web app callback route configured by `OAUTH_APP_REDIRECT_BASE_URL`,
+preserving `code`, `state` and OAuth error query fields. The app then completes
+the exchange with the JSON POST callback below.
+
+Complete OAuth:
+
+```http
+POST /api/v1/auth/oauth/:provider/callback
+```
+
+Body:
+
+```json
+{
+  "code": "provider-code",
+  "state": "oauth_...",
+  "redirectUri": "memo://oauth/callback"
+}
+```
+
+Cancelled or failed provider callbacks return `401 oauth_failed` and no token.
+
+Refresh session:
+
+```http
+POST /api/v1/auth/refresh
+```
+
+Body:
+
+```json
+{
+  "refreshToken": "jwt"
+}
+```
+
+Logout:
+
+```http
+POST /api/v1/auth/logout
+Authorization: Bearer <accessToken>
+```
+
+Body may include the active refresh token so both token IDs are revoked:
+
+```json
+{
+  "refreshToken": "jwt"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "revoked": true
+  },
+  "requestId": "req_..."
+}
+```
+
+Expired or revoked tokens return `401 unauthorized` on protected routes.
+
 Session DTO:
 
 ```json

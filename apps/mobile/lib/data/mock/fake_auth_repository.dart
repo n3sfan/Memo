@@ -10,19 +10,32 @@ class FakeAuthRepository implements AuthRepository {
   final TokenStorage tokenStorage;
 
   @override
-  Future<AuthSession?> getSavedSession() async {
-    final String? accessToken = await tokenStorage.getAccessToken();
-    final String? refreshToken = await tokenStorage.getRefreshToken();
+  Future<AuthSession?> getSavedSession() {
+    return tokenStorage.getSession();
+  }
 
-    if (accessToken == null || refreshToken == null) {
-      return null;
-    }
-
-    return AuthSession(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      user: mockUser,
+  @override
+  Future<OAuthStartResponseDto> startOAuth({
+    required OAuthProviderType provider,
+    required String redirectUri,
+  }) async {
+    return OAuthStartResponseDto(
+      authorizationUrl:
+          '$redirectUri?code=mock_${provider.pathSegment}_code&state=mock_state',
+      state: 'mock_state',
     );
+  }
+
+  @override
+  Future<SessionDto> completeOAuth({
+    required OAuthProviderType provider,
+    required String code,
+    required String state,
+    required String redirectUri,
+  }) async {
+    await saveSession(mockSession);
+
+    return mockSession;
   }
 
   @override
@@ -38,7 +51,12 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> logout() {
+  Future<void> clearSession() {
     return tokenStorage.clearSession();
+  }
+
+  @override
+  Future<void> logout() {
+    return clearSession();
   }
 }

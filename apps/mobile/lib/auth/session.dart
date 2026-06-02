@@ -23,4 +23,13 @@ class AuthSession {
   final String refreshToken;
   final DateTime? expiresAt;
   final UserProfileDto? user;
+
+  bool isExpired({DateTime? now, Duration skew = const Duration(seconds: 30)}) {
+    final DateTime? expiry = expiresAt;
+    if (expiry == null) {
+      return false;
+    }
+
+    return !(now ?? DateTime.now().toUtc()).add(skew).isBefore(expiry);
+  }
 }

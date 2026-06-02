@@ -1,5 +1,82 @@
 import 'json.dart';
 
+enum OAuthProviderType {
+  google('google'),
+  apple('apple');
+
+  const OAuthProviderType(this.pathSegment);
+
+  final String pathSegment;
+
+  static OAuthProviderType fromPathSegment(String value) {
+    for (final OAuthProviderType provider in OAuthProviderType.values) {
+      if (provider.pathSegment == value) {
+        return provider;
+      }
+    }
+
+    throw FormatException('Unsupported OAuth provider: $value');
+  }
+}
+
+class OAuthStartRequestDto {
+  const OAuthStartRequestDto({required this.redirectUri});
+
+  final String redirectUri;
+
+  JsonMap toJson() {
+    return <String, Object?>{
+      'redirectUri': redirectUri,
+    };
+  }
+}
+
+class OAuthStartResponseDto {
+  const OAuthStartResponseDto({
+    required this.authorizationUrl,
+    required this.state,
+  });
+
+  factory OAuthStartResponseDto.fromJson(Object? value) {
+    final JsonMap json = asJsonMap(value, name: 'oauth start response');
+
+    return OAuthStartResponseDto(
+      authorizationUrl: readString(json, 'authorizationUrl'),
+      state: readString(json, 'state'),
+    );
+  }
+
+  final String authorizationUrl;
+  final String state;
+
+  JsonMap toJson() {
+    return <String, Object?>{
+      'authorizationUrl': authorizationUrl,
+      'state': state,
+    };
+  }
+}
+
+class OAuthCallbackRequestDto {
+  const OAuthCallbackRequestDto({
+    required this.code,
+    required this.state,
+    required this.redirectUri,
+  });
+
+  final String code;
+  final String state;
+  final String redirectUri;
+
+  JsonMap toJson() {
+    return <String, Object?>{
+      'code': code,
+      'state': state,
+      'redirectUri': redirectUri,
+    };
+  }
+}
+
 class UserProfileDto {
   const UserProfileDto({
     required this.id,

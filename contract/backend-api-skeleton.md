@@ -22,6 +22,14 @@ owners add real logic. See each module note for implemented exceptions.
 - `POST /auth/refresh`
 - `POST /auth/logout`
 
+Implemented behavior:
+
+- Google and Apple start endpoints return provider authorization URLs and one-time state.
+- Callback consumes state, upserts the OAuth user, creates a default Personal Map for new users and returns JWT access/refresh tokens.
+- Refresh rotates the refresh token and revokes the used refresh token ID.
+- Logout revokes the current access token ID and optionally a provided refresh token ID.
+- Protected routes reject expired or revoked access tokens.
+
 Files:
 
 - `apps/api/src/modules/auth/auth.controller.ts`
