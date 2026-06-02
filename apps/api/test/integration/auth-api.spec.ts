@@ -24,6 +24,7 @@ import {
 
 describe("Auth API", () => {
   let app: INestApplication;
+  let tokenService: AuthTokenService;
   let google: jest.Mocked<OAuthProviderClient>;
   let apple: jest.Mocked<OAuthProviderClient>;
   let userRepository: jest.Mocked<AuthUserRepository>;
@@ -72,6 +73,7 @@ describe("Auth API", () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    tokenService = moduleRef.get(AuthTokenService);
     app.setGlobalPrefix("api/v1");
     app.useGlobalFilters(new ApiExceptionFilter());
     await app.init();
@@ -194,6 +196,74 @@ describe("Auth API", () => {
     });
     expect(response.body.data).toBeUndefined();
     expect(userRepository.upsertOAuthUser).not.toHaveBeenCalled();
+  });
+
+  it("completes the full Google OAuth browser pipeline without internal_error", async () => {
+    process.env.OAUTH_APP_REDIRECT_BASE_URL = "http://localhost:5000";
+    const redirectUri =
+      "http://localhost:3000/api/v1/auth/oauth/google/callback";
+
+    const start = await request(app.getHttpServer())
+      .post("/api/v1/auth/oauth/google/start")
+      .send({ redirectUri })
+      .expect(201);
+
+    const providerCallback = await request(app.getHttpServer())
+      .get("/api/v1/auth/oauth/google/callback")
+      .query({
+        code: "oauth-code",
+        state: start.body.data.state,
+      })
+      .expect(302);
+    const appCallbackUrl = new URL(providerCallback.headers.location);
+
+    expect(appCallbackUrl.origin).toBe("http://localhost:5000");
+    expect(appCallbackUrl.pathname).toBe("/oauth/google");
+    expect(appCallbackUrl.searchParams.get("code")).toBe("oauth-code");
+    expect(appCallbackUrl.searchParams.get("state")).toBe(
+      start.body.data.state,
+    );
+
+    const session = await request(app.getHttpServer())
+      .post("/api/v1/auth/oauth/google/callback")
+      .set("x-request-id", "req_google_full_pipeline")
+      .send({
+        code: appCallbackUrl.searchParams.get("code"),
+        state: appCallbackUrl.searchParams.get("state"),
+        redirectUri,
+      })
+      .expect(201);
+
+    expect(session.body.error).toBeUndefined();
+    expect(session.body).toEqual({
+      data: {
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+        expiresIn: 900,
+        user: {
+          id: "user-1",
+          email: "memo@example.com",
+          displayName: "Memo User",
+          avatarUrl: null,
+        },
+      },
+      requestId: "req_google_full_pipeline",
+    });
+    expect(google.complete).toHaveBeenCalledWith({
+      code: "oauth-code",
+      state: start.body.data.state,
+      redirectUri,
+    });
+    await expect(
+      tokenService.verifyAccessToken(session.body.data.accessToken),
+    ).resolves.toMatchObject({
+      user: {
+        id: "user-1",
+        email: "memo@example.com",
+        displayName: "Memo User",
+        provider: "google",
+      },
+    });
   });
 });
 
