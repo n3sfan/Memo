@@ -22,10 +22,7 @@ class MemoryMapApp extends ConsumerWidget {
       });
     });
 
-    final AuthState authState = ref.watch(authControllerProvider);
-
     return MaterialApp.router(
-      key: ValueKey<AuthStatus>(authState.status),
       title: 'Memory Map',
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [

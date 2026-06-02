@@ -1,0 +1,11 @@
+{
+  "name": "Memo",
+  "short_name": "Memo",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F7F2FA",
+  "theme_color": "#6F55B5",
+  "description": "Memo private memory map.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
