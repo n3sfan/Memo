@@ -35,6 +35,11 @@ class _OpenStreetMapViewState extends State<_OpenStreetMapView> {
         onPositionChanged: (MapCamera camera, bool hasGesture) {
           _emitBounds(camera);
         },
+        onTap: (_, LatLng point) {
+          widget.config.onTap(
+            Coordinates(lat: point.latitude, lng: point.longitude),
+          );
+        },
         onLongPress: (_, LatLng point) {
           widget.config.onLongPress(
             Coordinates(lat: point.latitude, lng: point.longitude),

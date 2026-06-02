@@ -44,6 +44,31 @@ final upload = await ref.read(mediaRepositoryProvider).createPresignedUpload(
 );
 ```
 
+Upload bytes directly to object storage, then register the media reference:
+
+```dart
+await ref.read(objectUploadClientProvider).uploadFile(
+  uploadUrl: upload.uploadUrl,
+  localPath: localFilePath,
+  mimeType: 'image/jpeg',
+  sizeBytes: 1048576,
+);
+
+final media = await ref.read(mediaRepositoryProvider).registerMedia(
+  pinId: pin.id,
+  request: RegisterMediaRequestDto(
+    mediaType: PinMediaType.image,
+    objectKey: upload.objectKey,
+    mimeType: 'image/jpeg',
+    sizeBytes: 1048576,
+  ),
+);
+```
+
+The object upload client uses a separate Dio client and must not use the API
+auth interceptor, because presigned URLs are already authorized by the backend.
+The backend stores only the registered metadata and object key.
+
 The default provider mode is mock data. Feature owners can build Map View, Pin
 Editor and Timeline before backend APIs are ready. To use the real backend, run
 with `--dart-define=USE_MOCK_DATA=false`.

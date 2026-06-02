@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:memory_map_mobile/app/pin_editor_save_flow.dart';
 import 'package:memory_map_mobile/app/pin_editor_screen.dart';
 import 'package:memory_map_mobile/data/db/app_database.dart';
 import 'package:memory_map_mobile/data/db/cache_models.dart';
@@ -10,176 +11,263 @@ import 'package:memory_map_mobile/data/repositories/repositories.dart';
 import 'package:memory_map_mobile/data/repository_providers.dart';
 
 void main() {
-  testWidgets('invalid coordinates show inline validation and do not submit', (
-    WidgetTester tester,
-  ) async {
+  testWidgets(
+      'new editor without coordinates blocks save with friendly message',
+      (WidgetTester tester) async {
     final _RecordingPinRepository pinRepository = _RecordingPinRepository();
-    final _MemoryLocalPinsDao localPinsDao = _MemoryLocalPinsDao();
-    final _MemoryUploadQueueDao uploadQueueDao = _MemoryUploadQueueDao();
 
-    await _pumpEditor(
-      tester,
-      localPinsDao: localPinsDao,
-      uploadQueueDao: uploadQueueDao,
-      pinRepository: pinRepository,
-    );
+    await _pumpEditor(tester, pinRepository: pinRepository);
 
     await tester.enterText(
       find.byKey(const ValueKey<String>('pin-editor-title-field')),
-      'Invalid place',
+      'Kỷ niệm mới',
     );
-    await tester.enterText(
-      find.byKey(const ValueKey<String>('pin-editor-lat-field')),
-      '91',
-    );
-    await tester.enterText(
-      find.byKey(const ValueKey<String>('pin-editor-lng-field')),
-      '106.7009',
-    );
-
     await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
     await tester.pump();
 
     expect(
-      find.text('Latitude must be between -90 and 90.'),
+      find.text('Hãy chọn vị trí trên bản đồ trước khi lưu.'),
       findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('pin-editor-lat-field')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('pin-editor-lng-field')),
+      findsNothing,
     );
     expect(pinRepository.createCalls, 0);
   });
 
-  testWidgets('saving online calls the API repository and updates local cache',
-      (
-    WidgetTester tester,
-  ) async {
+  testWidgets('new editor saves with route coordinates and no lat/lng inputs',
+      (WidgetTester tester) async {
     final _RecordingPinRepository pinRepository = _RecordingPinRepository();
     final _MemoryLocalPinsDao localPinsDao = _MemoryLocalPinsDao();
-    final _MemoryUploadQueueDao uploadQueueDao = _MemoryUploadQueueDao();
 
     await _pumpEditor(
       tester,
-      localPinsDao: localPinsDao,
-      uploadQueueDao: uploadQueueDao,
       pinRepository: pinRepository,
+      localPinsDao: localPinsDao,
+      initialCoordinates: _coordinates,
     );
 
     await _fillValidPinForm(tester);
     await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
     await _pumpAsync(tester);
 
+    expect(
+      find.byKey(const ValueKey<String>('pin-editor-lat-field')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('pin-editor-lng-field')),
+      findsNothing,
+    );
     expect(pinRepository.createCalls, 1);
-    expect(pinRepository.lastMapId, _map.id);
-    expect(pinRepository.lastCreateRequest?.title, 'Da Lat cafe');
-    expect(pinRepository.lastCreateRequest?.lat, 11.9404);
-    expect(pinRepository.lastCreateRequest?.lng, 108.4583);
+    expect(pinRepository.lastCreateRequest?.lat, _coordinates.lat);
+    expect(pinRepository.lastCreateRequest?.lng, _coordinates.lng);
+    expect(find.text('Kỷ niệm đã lưu.'), findsOneWidget);
 
     final PinDto? cached = await localPinsDao.getPin('pin_saved_1');
-
-    expect(cached, isNotNull);
-    expect(cached?.title, 'Da Lat cafe');
-    expect(localPinsDao.syncedAtById['pin_saved_1'], isNotNull);
-    expect(find.text('Memory saved.'), findsOneWidget);
+    expect(cached?.lat, _coordinates.lat);
+    expect(cached?.lng, _coordinates.lng);
   });
 
-  testWidgets(
-    'saving after network failure stores pending pin and media placeholders',
-    (WidgetTester tester) async {
-      final _FailingPinRepository pinRepository = _FailingPinRepository();
-      final _MemoryLocalPinsDao localPinsDao = _MemoryLocalPinsDao();
-      final _MemoryUploadQueueDao uploadQueueDao = _MemoryUploadQueueDao();
-
-      await _pumpEditor(
-        tester,
-        localPinsDao: localPinsDao,
-        uploadQueueDao: uploadQueueDao,
-        pinRepository: pinRepository,
-      );
-
-      await _fillValidPinForm(tester);
-      await tester.tap(
-        find.byKey(const ValueKey<String>('pin-editor-add-image')),
-      );
-      await tester.tap(
-        find.byKey(const ValueKey<String>('pin-editor-add-text')),
-      );
-      await tester.tap(
-        find.byKey(const ValueKey<String>('pin-editor-add-audio')),
-      );
-      await tester.pump();
-
-      expect(find.text('Image placeholder queued'), findsOneWidget);
-      expect(find.text('Text placeholder queued'), findsOneWidget);
-      expect(find.text('Audio placeholder queued'), findsOneWidget);
-
-      await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
-      await _pumpAsync(tester);
-
-      final List<PendingPinMutation> mutations =
-          await uploadQueueDao.listPendingPinMutations();
-      final List<PendingMediaUpload> uploads =
-          await uploadQueueDao.listPendingMediaUploads();
-      final List<PinDto> cachedPins = await localPinsDao.listPinsForMap(
-        _map.id,
-      );
-
-      expect(pinRepository.createCalls, 1);
-      expect(mutations, hasLength(1));
-      expect(mutations.single.operation, 'create');
-      expect(cachedPins, hasLength(1));
-      expect(cachedPins.single.clientId, mutations.single.clientId);
-      expect(
-        uploads.map((PendingMediaUpload item) => item.mediaType),
-        <PinMediaType>[
-          PinMediaType.image,
-          PinMediaType.text,
-          PinMediaType.audio,
-        ],
-      );
-      expect(
-        find.text('Saved offline. Will sync when you are back online.'),
-        findsOneWidget,
-      );
-    },
-  );
-
-  testWidgets('editing an existing pin loads values and calls update', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('memory date uses date picker instead of manual typing',
+      (WidgetTester tester) async {
     final _RecordingPinRepository pinRepository = _RecordingPinRepository();
+
+    await _pumpEditor(
+      tester,
+      pinRepository: pinRepository,
+      initialCoordinates: _coordinates,
+    );
+
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-date-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('15'));
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2026-06-15'), findsOneWidget);
+  });
+
+  testWidgets('copy separates the memory story from text file attachments',
+      (WidgetTester tester) async {
+    final _RecordingPinRepository pinRepository = _RecordingPinRepository();
+
+    await _pumpEditor(
+      tester,
+      pinRepository: pinRepository,
+      initialCoordinates: _coordinates,
+    );
+
+    expect(find.text('Câu chuyện'), findsOneWidget);
+    expect(find.text('Tệp văn bản'), findsOneWidget);
+    expect(find.text('Thêm ghi chú'), findsNothing);
+  });
+
+  testWidgets('audio control opens clear audio options, not a vague recorder',
+      (WidgetTester tester) async {
+    final _RecordingPinRepository pinRepository = _RecordingPinRepository();
+
+    await _pumpEditor(
+      tester,
+      pinRepository: pinRepository,
+      initialCoordinates: _coordinates,
+      attachmentActions: const DefaultPinEditorAttachmentActions(),
+    );
+
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-add-audio')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('Âm thanh'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Ghi âm mới'), findsOneWidget);
+    expect(find.text('Chọn file âm thanh'), findsOneWidget);
+    expect(
+      find.text('Video cần backend hỗ trợ mediaType video nên chưa bật ở đây.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('attachment controls add real drafts and allow removal',
+      (WidgetTester tester) async {
+    final _RecordingPinRepository pinRepository = _RecordingPinRepository();
+
+    await _pumpEditor(
+      tester,
+      pinRepository: pinRepository,
+      initialCoordinates: _coordinates,
+      attachmentActions: _FakeAttachmentActions(),
+    );
+
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
+    await tester.tap(find.byKey(const ValueKey<String>('pin-editor-add-text')));
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-add-audio')));
+    await tester.pump();
+
+    expect(find.text('photo.jpg'), findsOneWidget);
+    expect(find.text('story.txt'), findsOneWidget);
+    expect(find.text('voice.m4a'), findsOneWidget);
+
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-remove-image-1')));
+    await tester.pump();
+
+    expect(find.text('photo.jpg'), findsNothing);
+    expect(find.text('story.txt'), findsOneWidget);
+  });
+
+  testWidgets('online save uploads attachments to R2 and registers media',
+      (WidgetTester tester) async {
+    final _RecordingPinRepository pinRepository = _RecordingPinRepository();
+    final _RecordingMediaRepository mediaRepository =
+        _RecordingMediaRepository();
+    final _RecordingObjectUploadClient uploadClient =
+        _RecordingObjectUploadClient();
     final _MemoryLocalPinsDao localPinsDao = _MemoryLocalPinsDao();
+
+    await _pumpEditor(
+      tester,
+      pinRepository: pinRepository,
+      mediaRepository: mediaRepository,
+      objectUploadClient: uploadClient,
+      localPinsDao: localPinsDao,
+      initialCoordinates: _coordinates,
+      attachmentActions: _FakeAttachmentActions(),
+    );
+
+    await _fillValidPinForm(tester);
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
+    await _pumpAsync(tester);
+
+    expect(pinRepository.createCalls, 1);
+    expect(mediaRepository.presignCalls, 1);
+    expect(uploadClient.uploadCalls, 1);
+    expect(mediaRepository.registerCalls, 1);
+    expect(mediaRepository.lastRegisterObjectKey, 'pins/pin_saved_1/photo.jpg');
+    expect(find.text('Kỷ niệm đã lưu.'), findsOneWidget);
+
+    final PinDto? cached = await localPinsDao.getPin('pin_saved_1');
+    expect(cached?.media, hasLength(1));
+  });
+
+  testWidgets('media upload failure keeps saved pin and queues attachment',
+      (WidgetTester tester) async {
+    final _RecordingPinRepository pinRepository = _RecordingPinRepository();
+    final _RecordingMediaRepository mediaRepository =
+        _RecordingMediaRepository();
+    final _FailingObjectUploadClient uploadClient =
+        _FailingObjectUploadClient();
     final _MemoryUploadQueueDao uploadQueueDao = _MemoryUploadQueueDao();
 
     await _pumpEditor(
       tester,
-      localPinsDao: localPinsDao,
-      uploadQueueDao: uploadQueueDao,
       pinRepository: pinRepository,
-      pinId: 'pin_existing_1',
-    );
-    await _pumpAsync(tester);
-
-    final TextFormField titleField = tester.widget<TextFormField>(
-      find.byKey(const ValueKey<String>('pin-editor-title-field')),
-    );
-    final TextFormField latField = tester.widget<TextFormField>(
-      find.byKey(const ValueKey<String>('pin-editor-lat-field')),
+      mediaRepository: mediaRepository,
+      objectUploadClient: uploadClient,
+      uploadQueueDao: uploadQueueDao,
+      initialCoordinates: _coordinates,
+      attachmentActions: _FakeAttachmentActions(),
     );
 
-    expect(titleField.controller?.text, 'Old memory');
-    expect(latField.controller?.text, '10.776900');
-
-    await tester.enterText(
-      find.byKey(const ValueKey<String>('pin-editor-title-field')),
-      'Updated memory',
-    );
+    await _fillValidPinForm(tester);
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
+    await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
     await _pumpAsync(tester);
 
-    expect(pinRepository.updateCalls, 1);
-    expect(pinRepository.lastUpdatePinId, 'pin_existing_1');
-    expect(pinRepository.lastUpdateRequest?.title, 'Updated memory');
+    expect(pinRepository.createCalls, 1);
+    expect(uploadClient.uploadCalls, 1);
+    expect(mediaRepository.registerCalls, 0);
+    expect(await uploadQueueDao.listPendingMediaUploads(), hasLength(1));
+    expect(
+      find.text('Kỷ niệm đã lưu, tệp sẽ tải lên lại sau.'),
+      findsOneWidget,
+    );
+  });
 
-    final PinDto? cached = await localPinsDao.getPin('pin_existing_1');
-    expect(cached?.title, 'Updated memory');
+  testWidgets('offline pin save still queues pending pin and media',
+      (WidgetTester tester) async {
+    final _FailingPinRepository pinRepository = _FailingPinRepository();
+    final _MemoryUploadQueueDao uploadQueueDao = _MemoryUploadQueueDao();
+
+    await _pumpEditor(
+      tester,
+      pinRepository: pinRepository,
+      uploadQueueDao: uploadQueueDao,
+      initialCoordinates: _coordinates,
+      attachmentActions: _FakeAttachmentActions(),
+    );
+
+    await _fillValidPinForm(tester);
+    await tester
+        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
+    await _pumpAsync(tester);
+
+    expect(await uploadQueueDao.listPendingPinMutations(), hasLength(1));
+    expect(await uploadQueueDao.listPendingMediaUploads(), hasLength(1));
+    expect(
+      find.text('Đã lưu offline. Sẽ đồng bộ khi có mạng.'),
+      findsOneWidget,
+    );
   });
 }
 
@@ -190,11 +278,17 @@ const MapDto _map = MapDto(
   name: 'Test Map',
 );
 
+const Coordinates _coordinates = Coordinates(lat: 10.762622, lng: 106.660172);
+
 Future<void> _pumpEditor(
   WidgetTester tester, {
-  required LocalPinsDao localPinsDao,
-  required UploadQueueDao uploadQueueDao,
   required PinRepository pinRepository,
+  LocalPinsDao? localPinsDao,
+  UploadQueueDao? uploadQueueDao,
+  MediaRepository? mediaRepository,
+  ObjectUploadClient? objectUploadClient,
+  PinEditorAttachmentActions? attachmentActions,
+  Coordinates? initialCoordinates,
   String? pinId,
 }) async {
   tester.view.physicalSize = const Size(1080, 1920);
@@ -207,13 +301,28 @@ Future<void> _pumpEditor(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        localPinsDaoProvider.overrideWithValue(localPinsDao),
-        uploadQueueDaoProvider.overrideWithValue(uploadQueueDao),
+        localPinsDaoProvider.overrideWithValue(
+          localPinsDao ?? _MemoryLocalPinsDao(),
+        ),
+        uploadQueueDaoProvider.overrideWithValue(
+          uploadQueueDao ?? _MemoryUploadQueueDao(),
+        ),
         mapRepositoryProvider.overrideWithValue(const _FakeMapRepository(_map)),
         pinRepositoryProvider.overrideWithValue(pinRepository),
+        mediaRepositoryProvider.overrideWithValue(
+          mediaRepository ?? _RecordingMediaRepository(),
+        ),
+        objectUploadClientProvider.overrideWithValue(
+          objectUploadClient ?? _RecordingObjectUploadClient(),
+        ),
       ],
       child: MaterialApp(
-        home: PinEditorScreen(pinId: pinId),
+        home: PinEditorScreen(
+          pinId: pinId,
+          initialCoordinates: initialCoordinates,
+          attachmentActions: attachmentActions ?? _NoopAttachmentActions(),
+          now: () => DateTime.utc(2026, 6, 2),
+        ),
       ),
     ),
   );
@@ -222,23 +331,11 @@ Future<void> _pumpEditor(
 Future<void> _fillValidPinForm(WidgetTester tester) async {
   await tester.enterText(
     find.byKey(const ValueKey<String>('pin-editor-title-field')),
-    'Da Lat cafe',
+    'Cà phê Đà Lạt',
   );
   await tester.enterText(
     find.byKey(const ValueKey<String>('pin-editor-note-field')),
-    'Coffee near the lake.',
-  );
-  await tester.enterText(
-    find.byKey(const ValueKey<String>('pin-editor-memory-date-field')),
-    '2026-05-30',
-  );
-  await tester.enterText(
-    find.byKey(const ValueKey<String>('pin-editor-lat-field')),
-    '11.9404',
-  );
-  await tester.enterText(
-    find.byKey(const ValueKey<String>('pin-editor-lng-field')),
-    '108.4583',
+    'Một buổi sáng yên tĩnh.',
   );
 }
 
@@ -261,6 +358,64 @@ class _FakeMapRepository implements MapRepository {
   @override
   Future<List<MapDto>> listMaps() async {
     return <MapDto>[map];
+  }
+}
+
+class _NoopAttachmentActions implements PinEditorAttachmentActions {
+  @override
+  Future<PinEditorAttachmentDraft?> pickAudio(BuildContext context) async {
+    return null;
+  }
+
+  @override
+  Future<PinEditorAttachmentDraft?> pickImage(BuildContext context) async {
+    return null;
+  }
+
+  @override
+  Future<PinEditorAttachmentDraft?> pickText(BuildContext context) async {
+    return null;
+  }
+}
+
+class _FakeAttachmentActions implements PinEditorAttachmentActions {
+  @override
+  Future<PinEditorAttachmentDraft?> pickImage(BuildContext context) async {
+    return const PinEditorAttachmentDraft(
+      id: 'image-1',
+      mediaType: PinMediaType.image,
+      label: 'photo.jpg',
+      localPath: '/tmp/photo.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 1234,
+      fileName: 'photo.jpg',
+    );
+  }
+
+  @override
+  Future<PinEditorAttachmentDraft?> pickText(BuildContext context) async {
+    return const PinEditorAttachmentDraft(
+      id: 'text-1',
+      mediaType: PinMediaType.text,
+      label: 'story.txt',
+      localPath: '/tmp/story.txt',
+      mimeType: 'text/plain',
+      sizeBytes: 64,
+      fileName: 'story.txt',
+    );
+  }
+
+  @override
+  Future<PinEditorAttachmentDraft?> pickAudio(BuildContext context) async {
+    return const PinEditorAttachmentDraft(
+      id: 'audio-1',
+      mediaType: PinMediaType.audio,
+      label: 'voice.m4a',
+      localPath: '/tmp/voice.m4a',
+      mimeType: 'audio/mp4',
+      sizeBytes: 2048,
+      fileName: 'voice.m4a',
+    );
   }
 }
 
@@ -333,7 +488,7 @@ class _RecordingPinRepository implements PinRepository {
     lastMapId = mapId;
     lastCreateRequest = request;
 
-    final DateTime now = DateTime.utc(2026, 5, 30, 10);
+    final DateTime now = DateTime.utc(2026, 6, 2, 10);
 
     return PinDto(
       id: 'pin_saved_1',
@@ -360,8 +515,8 @@ class _RecordingPinRepository implements PinRepository {
     return PinDto(
       id: pinId,
       mapId: _map.id,
-      title: 'Old memory',
-      note: 'Before edit.',
+      title: 'Kỷ niệm cũ',
+      note: 'Trước khi sửa.',
       memoryDate: DateTime.utc(2026, 5, 24),
       lat: 10.7769,
       lng: 106.7009,
@@ -389,8 +544,6 @@ class _RecordingPinRepository implements PinRepository {
     lastUpdatePinId = pinId;
     lastUpdateRequest = request;
 
-    final DateTime now = DateTime.utc(2026, 5, 31, 10);
-
     return PinDto(
       id: pinId,
       mapId: _map.id,
@@ -401,7 +554,7 @@ class _RecordingPinRepository implements PinRepository {
       lng: request.lng,
       media: const <PinMediaDto>[],
       createdAt: DateTime.utc(2026, 5, 24, 18),
-      updatedAt: now,
+      updatedAt: DateTime.utc(2026, 6, 2, 10),
       clientId: 'local_pin_existing_1',
     );
   }
@@ -420,6 +573,79 @@ class _FailingPinRepository extends _RecordingPinRepository {
       apiError: ApiError(
         error: 'network_error',
         message: 'offline',
+        details: <String, Object?>{},
+        requestId: '',
+      ),
+    );
+  }
+}
+
+class _RecordingMediaRepository implements MediaRepository {
+  int presignCalls = 0;
+  int registerCalls = 0;
+  String? lastRegisterObjectKey;
+
+  @override
+  Future<PresignResponseDto> createPresignedUpload({
+    required String pinId,
+    required PresignRequestDto request,
+  }) async {
+    presignCalls += 1;
+
+    return PresignResponseDto(
+      uploadUrl: 'https://r2.example.test/$pinId/${request.fileName}',
+      objectKey: 'pins/$pinId/${request.fileName}',
+      expiresAt: DateTime.utc(2026, 6, 2, 10, 15),
+    );
+  }
+
+  @override
+  Future<PinMediaDto> registerMedia({
+    required String pinId,
+    required RegisterMediaRequestDto request,
+  }) async {
+    registerCalls += 1;
+    lastRegisterObjectKey = request.objectKey;
+
+    return PinMediaDto(
+      id: 'media_$registerCalls',
+      pinId: pinId,
+      mediaType: request.mediaType,
+      objectKey: request.objectKey,
+      mimeType: request.mimeType,
+      sizeBytes: request.sizeBytes,
+      createdAt: DateTime.utc(2026, 6, 2, 10, 16),
+    );
+  }
+}
+
+class _RecordingObjectUploadClient implements ObjectUploadClient {
+  int uploadCalls = 0;
+
+  @override
+  Future<void> uploadFile({
+    required String uploadUrl,
+    required String localPath,
+    required String mimeType,
+    required int sizeBytes,
+  }) async {
+    uploadCalls += 1;
+  }
+}
+
+class _FailingObjectUploadClient extends _RecordingObjectUploadClient {
+  @override
+  Future<void> uploadFile({
+    required String uploadUrl,
+    required String localPath,
+    required String mimeType,
+    required int sizeBytes,
+  }) async {
+    uploadCalls += 1;
+    throw const ApiException(
+      apiError: ApiError(
+        error: 'network_error',
+        message: 'upload failed',
         details: <String, Object?>{},
         requestId: '',
       ),

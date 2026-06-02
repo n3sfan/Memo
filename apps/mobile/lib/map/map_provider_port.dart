@@ -39,6 +39,7 @@ class MapViewConfig {
     required this.markers,
     required this.onViewportChanged,
     required this.onMarkerTap,
+    required this.onTap,
     required this.onLongPress,
   });
 
@@ -46,6 +47,7 @@ class MapViewConfig {
   final List<MapMarkerModel> markers;
   final ValueChanged<BboxQuery> onViewportChanged;
   final ValueChanged<String> onMarkerTap;
+  final ValueChanged<Coordinates> onTap;
   final ValueChanged<Coordinates> onLongPress;
 }
 

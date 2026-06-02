@@ -27,7 +27,13 @@ void main() {
         GoRoute(
           path: '/pins/new',
           builder: (BuildContext context, GoRouterState state) {
-            return const Scaffold(body: Text('new-pin-route'));
+            final Map<String, String> query = state.uri.queryParameters;
+            return Scaffold(
+              body: Text(
+                'new-pin-route ${query['lat'] ?? 'no-lat'} '
+                '${query['lng'] ?? 'no-lng'}',
+              ),
+            );
           },
         ),
         GoRoute(
@@ -67,6 +73,58 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('pin-pin_sai_gon_1'), findsOneWidget);
+  });
+
+  testWidgets('pick mode opens the pin editor with map coordinates', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = GoRouter(
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/',
+          builder: (BuildContext context, GoRouterState state) {
+            return const MapScreen(
+              startPicking: true,
+              mapViewBuilder: _buildFakeMapView,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/timeline',
+          builder: (BuildContext context, GoRouterState state) {
+            return const Scaffold(body: Text('timeline-route'));
+          },
+        ),
+        GoRoute(
+          path: '/pins/new',
+          builder: (BuildContext context, GoRouterState state) {
+            final Map<String, String> query = state.uri.queryParameters;
+            return Scaffold(
+              body: Text('new-pin-route ${query['lat']} ${query['lng']}'),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Chạm vào bản đồ để chọn vị trí.'), findsOneWidget);
+
+    final Rect mapBounds = tester.getRect(
+      find.byKey(const ValueKey<String>('fake-map-canvas')),
+    );
+    await tester.tapAt(mapBounds.topLeft + const Offset(24, 220));
+    await tester.pumpAndSettle();
+
+    expect(find.text('new-pin-route 10.123456 106.654321'), findsOneWidget);
   });
 }
 
@@ -108,19 +166,28 @@ class _FakeMapViewState extends State<_FakeMapView> {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xFFEAF1EC),
-      child: Stack(
-        children: widget.config.markers.map((MapMarkerModel marker) {
-          return Align(
-            alignment: Alignment.center,
-            child: TextButton(
-              key: ValueKey<String>('fake-marker-${marker.id}'),
-              onPressed: () => widget.config.onMarkerTap(marker.id),
-              child: Text(marker.id),
-            ),
-          );
-        }).toList(growable: false),
+    return GestureDetector(
+      key: const ValueKey<String>('fake-map-canvas'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        widget.config.onTap(
+          const Coordinates(lat: 10.123456, lng: 106.654321),
+        );
+      },
+      child: ColoredBox(
+        color: const Color(0xFFEAF1EC),
+        child: Stack(
+          children: widget.config.markers.map((MapMarkerModel marker) {
+            return Align(
+              alignment: Alignment.center,
+              child: TextButton(
+                key: ValueKey<String>('fake-marker-${marker.id}'),
+                onPressed: () => widget.config.onMarkerTap(marker.id),
+                child: Text(marker.id),
+              ),
+            );
+          }).toList(growable: false),
+        ),
       ),
     );
   }
