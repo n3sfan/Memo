@@ -18,4 +18,20 @@ class FakeMediaRepository implements MediaRepository {
       expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 15)),
     );
   }
+
+  @override
+  Future<PinMediaDto> registerMedia({
+    required String pinId,
+    required RegisterMediaRequestDto request,
+  }) async {
+    return PinMediaDto(
+      id: state.nextId('media'),
+      pinId: pinId,
+      mediaType: request.mediaType,
+      objectKey: request.objectKey,
+      mimeType: request.mimeType,
+      sizeBytes: request.sizeBytes,
+      createdAt: DateTime.now().toUtc(),
+    );
+  }
 }

@@ -91,6 +91,10 @@ final mediaRepositoryProvider = Provider<MediaRepository>((ref) {
   return ApiMediaRepository(ref.watch(apiClientProvider));
 });
 
+final objectUploadClientProvider = Provider<ObjectUploadClient>((ref) {
+  return DioObjectUploadClient();
+});
+
 final timelineRepositoryProvider = Provider<TimelineRepository>((ref) {
   if (ref.watch(useMockRepositoriesProvider)) {
     return FakeTimelineRepository(ref.watch(mockBackendStateProvider));

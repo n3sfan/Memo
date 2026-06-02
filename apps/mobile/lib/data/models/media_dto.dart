@@ -125,3 +125,26 @@ class PresignResponseDto {
     };
   }
 }
+
+class RegisterMediaRequestDto {
+  const RegisterMediaRequestDto({
+    required this.mediaType,
+    required this.objectKey,
+    required this.mimeType,
+    required this.sizeBytes,
+  });
+
+  final PinMediaType mediaType;
+  final String objectKey;
+  final String mimeType;
+  final int sizeBytes;
+
+  JsonMap toJson() {
+    return <String, Object?>{
+      'mediaType': mediaType.toWire(),
+      'objectKey': objectKey,
+      'mimeType': mimeType,
+      'sizeBytes': sizeBytes,
+    };
+  }
+}

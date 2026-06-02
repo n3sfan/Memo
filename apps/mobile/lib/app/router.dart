@@ -12,7 +12,10 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const MapScreen(),
+      builder: (context, state) => MapScreen(
+        startPicking: state.uri.queryParameters['pick'] == '1',
+        editPinId: state.uri.queryParameters['editPinId'],
+      ),
     ),
     GoRoute(
       path: '/timeline',
@@ -30,7 +33,10 @@ final appRouter = GoRouter(
       path: '/pins/:pinId/edit',
       builder: (context, state) {
         final pinId = state.pathParameters['pinId'] ?? '';
-        return PinEditorScreen(pinId: pinId);
+        return PinEditorScreen(
+          pinId: pinId,
+          initialCoordinates: _coordinatesFromQuery(state.uri),
+        );
       },
     ),
     GoRoute(

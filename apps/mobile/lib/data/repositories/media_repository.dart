@@ -6,6 +6,11 @@ abstract interface class MediaRepository {
     required String pinId,
     required PresignRequestDto request,
   });
+
+  Future<PinMediaDto> registerMedia({
+    required String pinId,
+    required RegisterMediaRequestDto request,
+  });
 }
 
 class ApiMediaRepository implements MediaRepository {
@@ -22,6 +27,18 @@ class ApiMediaRepository implements MediaRepository {
       '/pins/$pinId/media/presign',
       body: request.toJson(),
       decoder: PresignResponseDto.fromJson,
+    );
+  }
+
+  @override
+  Future<PinMediaDto> registerMedia({
+    required String pinId,
+    required RegisterMediaRequestDto request,
+  }) {
+    return apiClient.post<PinMediaDto>(
+      '/pins/$pinId/media',
+      body: request.toJson(),
+      decoder: PinMediaDto.fromJson,
     );
   }
 }

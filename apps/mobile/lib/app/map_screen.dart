@@ -6,16 +6,36 @@ import '../data/models/models.dart';
 import '../map/map.dart';
 import 'map_view_controller.dart';
 
-class MapScreen extends ConsumerWidget {
+class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({
+    this.startPicking = false,
+    this.editPinId,
     this.mapViewBuilder = buildOpenStreetMapView,
     super.key,
   });
 
+  final bool startPicking;
+  final String? editPinId;
   final MapViewWidgetBuilder mapViewBuilder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MapScreen> createState() => _MapScreenState();
+}
+
+class _MapScreenState extends ConsumerState<MapScreen> {
+  late bool _isPicking = widget.startPicking;
+
+  @override
+  void didUpdateWidget(MapScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.startPicking != widget.startPicking ||
+        oldWidget.editPinId != widget.editPinId) {
+      _isPicking = widget.startPicking;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final MapViewState state = ref.watch(mapViewControllerProvider);
     final MapViewController controller = ref.read(
       mapViewControllerProvider.notifier,
@@ -39,7 +59,7 @@ class MapScreen extends ConsumerWidget {
       body: Stack(
         children: <Widget>[
           Positioned.fill(
-            child: mapViewBuilder(
+            child: widget.mapViewBuilder(
               context,
               MapViewConfig(
                 initialCamera: _initialCamera,
@@ -55,12 +75,30 @@ class MapScreen extends ConsumerWidget {
                 onMarkerTap: (String pinId) => context.push(
                   '/pins/${Uri.encodeComponent(pinId)}',
                 ),
+                onTap: (Coordinates coordinates) {
+                  if (_isPicking) {
+                    _openPinEditor(context, coordinates);
+                  }
+                },
                 onLongPress: (Coordinates coordinates) {
-                  _openNewPin(context, coordinates);
+                  _openPinEditor(context, coordinates);
                 },
               ),
             ),
           ),
+          if (_isPicking)
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: _PickLocationBanner(
+                  onCancel: () {
+                    setState(() {
+                      _isPicking = false;
+                    });
+                  },
+                ),
+              ),
+            ),
           const SafeArea(
             child: Align(
               alignment: Alignment.topCenter,
@@ -104,21 +142,26 @@ class MapScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openNewPin(context),
-        tooltip: 'New memory',
-        child: const Icon(Icons.add_location_alt_outlined),
+        onPressed: () {
+          setState(() {
+            _isPicking = true;
+          });
+        },
+        tooltip: _isPicking ? 'Đang chọn vị trí' : 'Chọn vị trí',
+        child: Icon(
+          _isPicking
+              ? Icons.touch_app_outlined
+              : Icons.add_location_alt_outlined,
+        ),
       ),
     );
   }
 
-  void _openNewPin(BuildContext context, [Coordinates? coordinates]) {
-    if (coordinates == null) {
-      context.push('/pins/new');
-      return;
-    }
-
+  void _openPinEditor(BuildContext context, Coordinates coordinates) {
     final Uri uri = Uri(
-      path: '/pins/new',
+      path: widget.editPinId == null
+          ? '/pins/new'
+          : '/pins/${Uri.encodeComponent(widget.editPinId!)}/edit',
       queryParameters: <String, String>{
         'lat': coordinates.lat.toStringAsFixed(6),
         'lng': coordinates.lng.toStringAsFixed(6),
@@ -204,6 +247,46 @@ class _MapStatusBanner extends StatelessWidget {
             const SizedBox(width: 8),
             action!,
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PickLocationBanner extends StatelessWidget {
+  const _PickLocationBanner({required this.onCancel});
+
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 64, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x26000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Icon(Icons.touch_app_outlined, size: 20),
+          const SizedBox(width: 10),
+          const Flexible(child: Text('Chạm vào bản đồ để chọn vị trí.')),
+          TextButton(
+            onPressed: onCancel,
+            child: const Text('Hủy'),
+          ),
         ],
       ),
     );

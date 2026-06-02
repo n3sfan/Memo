@@ -89,27 +89,39 @@ class PinEditorSaveInput {
 class PinEditorSaveResult {
   const PinEditorSaveResult({
     required this.pin,
-    required this.pendingSync,
+    required this.status,
   });
 
   final PinDto pin;
-  final bool pendingSync;
+  final PinEditorSaveStatus status;
+}
+
+enum PinEditorSaveStatus {
+  synced,
+  pendingPin,
+  mediaPending,
 }
 
 class PinEditorSaveFlow {
   PinEditorSaveFlow({
     required PinRepository pinRepository,
+    required MediaRepository mediaRepository,
+    required ObjectUploadClient objectUploadClient,
     required LocalPinsDao localPinsDao,
     required UploadQueueDao uploadQueueDao,
     ClientIdFactory createId = createLocalClientId,
     DateTimeFactory now = _utcNow,
   })  : _pinRepository = pinRepository,
+        _mediaRepository = mediaRepository,
+        _objectUploadClient = objectUploadClient,
         _localPinsDao = localPinsDao,
         _uploadQueueDao = uploadQueueDao,
         _createId = createId,
         _now = now;
 
   final PinRepository _pinRepository;
+  final MediaRepository _mediaRepository;
+  final ObjectUploadClient _objectUploadClient;
   final LocalPinsDao _localPinsDao;
   final UploadQueueDao _uploadQueueDao;
   final ClientIdFactory _createId;
@@ -139,10 +151,33 @@ class PinEditorSaveFlow {
             );
 
       final DateTime syncedAt = _now();
-      await _localPinsDao.upsertPin(saved, syncedAt: syncedAt);
-      await _enqueueAttachments(clientId, input.attachments, syncedAt);
+      final List<PinMediaDto> uploadedMedia = <PinMediaDto>[];
+      var mediaPending = false;
 
-      return PinEditorSaveResult(pin: saved, pendingSync: false);
+      for (final PinEditorAttachmentDraft attachment in input.attachments) {
+        try {
+          uploadedMedia.add(await _uploadAttachment(saved.id, attachment));
+        } catch (_) {
+          mediaPending = true;
+          await _enqueueAttachment(clientId, attachment, syncedAt);
+        }
+      }
+
+      final PinDto pinWithMedia = uploadedMedia.isEmpty
+          ? saved
+          : _copyPinWithMedia(saved, <PinMediaDto>[
+              ...saved.media,
+              ...uploadedMedia,
+            ]);
+
+      await _localPinsDao.upsertPin(pinWithMedia, syncedAt: syncedAt);
+
+      return PinEditorSaveResult(
+        pin: pinWithMedia,
+        status: mediaPending
+            ? PinEditorSaveStatus.mediaPending
+            : PinEditorSaveStatus.synced,
+      );
     } on ApiException catch (error) {
       if (error.apiError.error != 'network_error') {
         rethrow;
@@ -177,7 +212,10 @@ class PinEditorSaveFlow {
     );
     await _enqueueAttachments(clientId, input.attachments, createdAt);
 
-    return PinEditorSaveResult(pin: pendingPin, pendingSync: true);
+    return PinEditorSaveResult(
+      pin: pendingPin,
+      status: PinEditorSaveStatus.pendingPin,
+    );
   }
 
   PinDto _pendingPin(
@@ -202,26 +240,83 @@ class PinEditorSaveFlow {
     );
   }
 
+  Future<PinMediaDto> _uploadAttachment(
+    String pinId,
+    PinEditorAttachmentDraft attachment,
+  ) async {
+    final PresignResponseDto presigned =
+        await _mediaRepository.createPresignedUpload(
+      pinId: pinId,
+      request: PresignRequestDto(
+        mediaType: attachment.mediaType,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+        fileName: attachment.fileName,
+      ),
+    );
+
+    await _objectUploadClient.uploadFile(
+      uploadUrl: presigned.uploadUrl,
+      localPath: attachment.localPath,
+      mimeType: attachment.mimeType,
+      sizeBytes: attachment.sizeBytes,
+    );
+
+    return _mediaRepository.registerMedia(
+      pinId: pinId,
+      request: RegisterMediaRequestDto(
+        mediaType: attachment.mediaType,
+        objectKey: presigned.objectKey,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+      ),
+    );
+  }
+
   Future<void> _enqueueAttachments(
     String pinClientId,
     List<PinEditorAttachmentDraft> attachments,
     DateTime createdAt,
   ) async {
     for (final PinEditorAttachmentDraft attachment in attachments) {
-      await _uploadQueueDao.enqueueMediaUpload(
-        PendingMediaUpload(
-          id: attachment.id,
-          pinClientId: pinClientId,
-          localPath: attachment.localPath,
-          mediaType: attachment.mediaType,
-          mimeType: attachment.mimeType,
-          sizeBytes: attachment.sizeBytes,
-          fileName: attachment.fileName,
-          createdAt: createdAt,
-          retryCount: 0,
-        ),
-      );
+      await _enqueueAttachment(pinClientId, attachment, createdAt);
     }
+  }
+
+  Future<void> _enqueueAttachment(
+    String pinClientId,
+    PinEditorAttachmentDraft attachment,
+    DateTime createdAt,
+  ) {
+    return _uploadQueueDao.enqueueMediaUpload(
+      PendingMediaUpload(
+        id: attachment.id,
+        pinClientId: pinClientId,
+        localPath: attachment.localPath,
+        mediaType: attachment.mediaType,
+        mimeType: attachment.mimeType,
+        sizeBytes: attachment.sizeBytes,
+        fileName: attachment.fileName,
+        createdAt: createdAt,
+        retryCount: 0,
+      ),
+    );
+  }
+
+  PinDto _copyPinWithMedia(PinDto pin, List<PinMediaDto> media) {
+    return PinDto(
+      id: pin.id,
+      mapId: pin.mapId,
+      title: pin.title,
+      note: pin.note,
+      memoryDate: pin.memoryDate,
+      lat: pin.lat,
+      lng: pin.lng,
+      media: media,
+      createdAt: pin.createdAt,
+      updatedAt: pin.updatedAt,
+      clientId: pin.clientId,
+    );
   }
 }
 
