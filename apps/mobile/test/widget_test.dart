@@ -162,7 +162,8 @@ void main() {
   testWidgets('web OAuth callback opens the Memory Map shell',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      _testApp(initialLocation: '/oauth/google?code=mock_code&state=mock_state'),
+      _testApp(
+          initialLocation: '/oauth/google?code=mock_code&state=mock_state'),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
