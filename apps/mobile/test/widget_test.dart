@@ -163,7 +163,8 @@ void main() {
       (WidgetTester tester) async {
     await tester.pumpWidget(
       _testApp(
-          initialLocation: '/oauth/google?code=mock_code&state=mock_state'),
+        initialLocation: '/oauth/google?code=mock_code&state=mock_state',
+      ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
