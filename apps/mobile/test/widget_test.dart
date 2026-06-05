@@ -62,7 +62,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump();
 
-    expect(find.text('Personal Map'), findsOneWidget);
+    expect(find.text('Bản đồ cá nhân'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('fake-marker-pin_da_lat_1')),
       findsOneWidget,
@@ -75,6 +75,8 @@ void main() {
     await tester.tap(
       find.byKey(const ValueKey<String>('fake-marker-pin_sai_gon_1')),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.article_outlined));
     await tester.pumpAndSettle();
 
     expect(find.text('pin-pin_sai_gon_1'), findsOneWidget);
@@ -121,12 +123,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Chạm vào bản đồ để chọn vị trí.'), findsOneWidget);
+    expect(find.byIcon(Icons.add_location), findsOneWidget);
 
     final Rect mapBounds = tester.getRect(
       find.byKey(const ValueKey<String>('fake-map-canvas')),
     );
     await tester.tapAt(mapBounds.topLeft + const Offset(24, 220));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.location_on).last);
     await tester.pumpAndSettle();
 
     expect(find.text('new-pin-route 10.123456 106.654321'), findsOneWidget);
@@ -134,33 +138,38 @@ void main() {
 
   testWidgets('starts at login when no session exists',
       (WidgetTester tester) async {
+    _setMobileViewport(tester);
     await tester.pumpWidget(_testApp());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Sign in to Memo'), findsWidgets);
+    expect(find.byKey(const Key('login_start_button')), findsOneWidget);
+    await _advanceToSignIn(tester);
     expect(find.byKey(const Key('login_google_button')), findsOneWidget);
   });
 
   testWidgets('mock Google login opens the Memory Map shell',
       (WidgetTester tester) async {
+    _setMobileViewport(tester);
     await tester.pumpWidget(_testApp());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
+    await _advanceToSignIn(tester);
 
     await tester.tap(find.byKey(const Key('login_google_button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byIcon(Icons.add_location_alt_outlined), findsOneWidget);
-    expect(find.byKey(const Key('logout_button')), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.text('Bản đồ cá nhân'), findsOneWidget);
   });
 
   testWidgets('web OAuth callback opens the Memory Map shell',
       (WidgetTester tester) async {
+    _setMobileViewport(tester);
     await tester.pumpWidget(
       _testApp(
         initialLocation: '/oauth/google?code=mock_code&state=mock_state',
@@ -170,28 +179,52 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byIcon(Icons.add_location_alt_outlined), findsOneWidget);
-    expect(find.byKey(const Key('logout_button')), findsOneWidget);
-    expect(find.text('Sign in to Memo'), findsNothing);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.text('Bản đồ cá nhân'), findsOneWidget);
+    expect(find.byKey(const Key('login_google_button')), findsNothing);
   });
 
   testWidgets('logout returns to login', (WidgetTester tester) async {
+    _setMobileViewport(tester);
     await tester.pumpWidget(_testApp());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
+    await _advanceToSignIn(tester);
 
     await tester.tap(find.byKey(const Key('login_google_button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.byKey(const Key('logout_button')));
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-logout')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Sign in to Memo'), findsWidgets);
+    expect(find.byKey(const Key('login_start_button')), findsOneWidget);
   });
+}
+
+void _setMobileViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(430, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
+}
+
+Future<void> _advanceToSignIn(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('login_start_button')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('login_onboarding_next_button')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('login_permissions_allow_button')));
+  await tester.pumpAndSettle();
 }
 
 Widget _testApp({String? initialLocation}) {

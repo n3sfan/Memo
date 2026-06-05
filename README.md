@@ -45,6 +45,12 @@ Tạo file `.env` từ mẫu:
 Copy-Item .env.example .env
 ```
 
+Trên macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
 Với chạy local Docker, tối thiểu cần điền:
 
 ```env
@@ -84,6 +90,12 @@ Health check API:
 Invoke-RestMethod http://127.0.0.1:3000/api/v1/health
 ```
 
+Trên macOS/Linux:
+
+```bash
+curl http://127.0.0.1:3000/api/v1/health
+```
+
 Kết quả mong đợi:
 
 ```json
@@ -104,6 +116,13 @@ Sau đó chạy lại:
 ```powershell
 docker compose up -d api
 Invoke-RestMethod http://127.0.0.1:3020/api/v1/health
+```
+
+Trên macOS/Linux:
+
+```bash
+docker compose up -d api
+curl http://127.0.0.1:3020/api/v1/health
 ```
 
 Xem log API:
@@ -150,20 +169,233 @@ docker compose up -d postgres redis
 pnpm api:db:deploy
 ```
 
-## Mobile Flutter
+## Chạy Frontend Mobile Flutter
 
-Mobile hiện là skeleton cấu trúc thư mục và dependency.
+Mobile hiện dùng Flutter tại `apps/mobile`. App dùng mock repositories mặc định
+(`USE_MOCK_DATA=true`), nên có thể chạy frontend mà không cần bật backend. Khi
+muốn gọi API thật, truyền `--dart-define=USE_MOCK_DATA=false` và
+`--dart-define=API_BASE_URL=...`.
 
-Sau khi cài Flutter SDK:
+### Chuẩn Bị Chung
 
 ```powershell
 cd apps/mobile
 flutter pub get
+flutter devices
+```
+
+Nếu Flutter không nằm trên `PATH` trên Windows, dùng trực tiếp SDK local:
+
+```powershell
+cd apps/mobile
+& 'C:\Users\Admin\dev\flutter\bin\flutter.bat' pub get
+& 'C:\Users\Admin\dev\flutter\bin\flutter.bat' devices
+```
+
+Trên macOS/Linux:
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter devices
+```
+
+### Chạy Bằng Mock Data
+
+Mock data là cách nhanh nhất để xem UI/frontend.
+
+Windows PowerShell:
+
+```powershell
+cd apps/mobile
+flutter run
+```
+
+macOS/Linux:
+
+```bash
+cd apps/mobile
+flutter run
+```
+
+Nếu có nhiều device, chỉ định device id từ `flutter devices`:
+
+```powershell
+flutter run -d <device-id>
+```
+
+### Chạy Với API Thật
+
+Bật backend trước:
+
+```powershell
+docker compose up -d --build
+```
+
+Với Chrome, Windows desktop, macOS desktop, Linux desktop hoặc iOS simulator
+chạy cùng máy host:
+
+```powershell
+cd apps/mobile
+flutter run -d chrome --dart-define=USE_MOCK_DATA=false --dart-define=USE_REAL_AUTH=true --dart-define=API_BASE_URL=http://localhost:3000/api/v1
+```
+
+Với Android emulator, dùng `10.0.2.2` để trỏ về host machine:
+
+```powershell
+cd apps/mobile
+flutter run -d emulator-5554 --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
+```
+
+Với thiết bị Android/iOS thật, dùng IP LAN của máy chạy backend:
+
+```powershell
+flutter run -d <device-id> --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://<LAN_IP>:3000/api/v1
+```
+
+Ví dụ:
+
+```powershell
+flutter run -d R58N0000000 --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://192.168.1.20:3000/api/v1
+```
+
+Nếu `.env` đổi `API_HOST_PORT=3020`, thay `3000` bằng `3020`.
+
+### Chạy Trên Windows
+
+Yêu cầu: Flutter SDK, Android Studio/Android emulator hoặc Chrome.
+
+```powershell
+cd apps/mobile
+flutter pub get
+flutter devices
+flutter run -d chrome
+```
+
+Chạy Android emulator:
+
+```powershell
+flutter emulators
+flutter emulators --launch <emulator-id>
+flutter run -d emulator-5554
+```
+
+### Chạy Trên macOS
+
+Yêu cầu: Flutter SDK. Để chạy iOS cần Xcode và CocoaPods.
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter devices
+flutter run -d chrome
+```
+
+Chạy iOS simulator:
+
+```bash
+open -a Simulator
+flutter run -d ios
+```
+
+Chạy Android emulator trên macOS:
+
+```bash
+flutter emulators
+flutter emulators --launch <emulator-id>
+flutter run -d <android-device-id>
+```
+
+### Chạy Trên Linux
+
+Yêu cầu: Flutter SDK, Chrome hoặc Android Studio/Android emulator.
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter devices
+flutter run -d chrome
+```
+
+Chạy Android emulator:
+
+```bash
+flutter emulators
+flutter emulators --launch <emulator-id>
+flutter run -d <android-device-id>
+```
+
+### Chạy Qua Chrome
+
+Project đã có thư mục `apps/mobile/web`, nên có thể chạy Flutter Web bằng
+Chrome:
+
+```powershell
+cd apps/mobile
+flutter config --enable-web
+flutter run -d chrome
+```
+
+Chạy Chrome với API thật:
+
+```powershell
+flutter run -d chrome --dart-define=USE_MOCK_DATA=false --dart-define=USE_REAL_AUTH=true --dart-define=API_BASE_URL=http://localhost:3000/api/v1
+```
+
+Muốn cố định port web để debug:
+
+```powershell
+flutter run -d chrome --web-hostname 127.0.0.1 --web-port 8080
+```
+
+### Chạy Desktop Preview
+
+Desktop preview không phải target MVP chính, nhưng có thể hữu ích khi kiểm tra
+layout. Hiện repo đã có Android và Web platform folders; nếu muốn chạy desktop,
+tạo platform folder tương ứng trước.
+
+Windows:
+
+```powershell
+cd apps/mobile
+flutter config --enable-windows-desktop
+flutter create --platforms=windows .
+flutter run -d windows
+```
+
+macOS:
+
+```bash
+cd apps/mobile
+flutter config --enable-macos-desktop
+flutter create --platforms=macos .
+flutter run -d macos
+```
+
+Linux:
+
+```bash
+cd apps/mobile
+flutter config --enable-linux-desktop
+flutter create --platforms=linux .
+flutter run -d linux
+```
+
+### Kiểm Tra Frontend
+
+```powershell
+cd apps/mobile
 flutter analyze
 flutter test
 ```
 
-Trong máy hiện tại, Flutter/Dart chưa có trong PATH nên phần mobile chưa được verify bằng command.
+Nếu Flutter không nằm trên `PATH`:
+
+```powershell
+cd apps/mobile
+& 'C:\Users\Admin\dev\flutter\bin\flutter.bat' analyze
+& 'C:\Users\Admin\dev\flutter\bin\flutter.bat' test
+```
 
 ## Deploy VPS Tóm Tắt
 

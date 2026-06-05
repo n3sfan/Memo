@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../auth/auth_controller.dart';
 import '../data/models/models.dart';
 import '../map/map.dart';
 import 'map_view_controller.dart';
+import 'theme.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({
@@ -25,6 +25,8 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   late bool _isPicking = widget.startPicking;
+  final int _bottomNavIndex = 0;
+  Coordinates? _pickedCoordinates;
 
   @override
   void didUpdateWidget(MapScreen oldWidget) {
@@ -35,37 +37,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
+  void _onBottomNavTapped(int index) {
+    switch (index) {
+      case 0:
+        return;
+      case 1:
+        context.go('/timeline');
+        return;
+      case 2:
+        context.go('/duo');
+        return;
+      case 3:
+        context.go('/settings');
+        return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final MapViewState state = ref.watch(mapViewControllerProvider);
-    final MapViewController controller = ref.read(
-      mapViewControllerProvider.notifier,
-    );
+    final MapViewController controller =
+        ref.read(mapViewControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(state.map?.name ?? 'Memory Map'),
-        actions: <Widget>[
-          IconButton(
-            onPressed: state.lastBbox == null
-                ? null
-                : () {
-                    controller.refresh();
-                  },
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-          ),
-          IconButton(
-            key: const Key('logout_button'),
-            tooltip: 'Log out',
-            onPressed: () => ref
-                .read<AuthController>(authControllerProvider.notifier)
-                .logout(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
       body: Stack(
+        fit: StackFit.expand,
         children: <Widget>[
           Positioned.fill(
             child: widget.mapViewBuilder(
@@ -81,86 +77,401 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     )
                     .toList(growable: false),
                 onViewportChanged: controller.viewportChanged,
-                onMarkerTap: (String pinId) => context.push(
-                  '/pins/${Uri.encodeComponent(pinId)}',
-                ),
+                onMarkerTap: (String pinId) {
+                  _showPinPreview(context, pinId);
+                },
                 onTap: (Coordinates coordinates) {
                   if (_isPicking) {
-                    _openPinEditor(context, coordinates);
+                    setState(() {
+                      _pickedCoordinates = coordinates;
+                    });
                   }
                 },
                 onLongPress: (Coordinates coordinates) {
-                  _openPinEditor(context, coordinates);
+                  setState(() {
+                    _isPicking = true;
+                    _pickedCoordinates = coordinates;
+                  });
                 },
+              ),
+            ),
+          ),
+          if (_isPicking && _pickedCoordinates == null)
+            const Center(
+              child: Icon(
+                Icons.add_location,
+                size: 48,
+                color: MemoTheme.primary,
+              ),
+            ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.spaceBetween,
+                children: [
+                  if (_isPicking)
+                    FloatingActionButton.small(
+                      onPressed: () {
+                        setState(() {
+                          _isPicking = false;
+                          _pickedCoordinates = null;
+                        });
+                      },
+                      backgroundColor: Colors.white,
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: MemoTheme.onBackground,
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.map_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Bản đồ cá nhân',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(width: 4),
+                          Icon(Icons.lock, size: 14),
+                        ],
+                      ),
+                    ),
+                  if (state.errorMessage != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MemoTheme.danger,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.cloud_off, size: 18, color: Colors.white),
+                          SizedBox(width: 8),
+                          Text(
+                            'Đang offline',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 4),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 18,
+                            color: MemoTheme.primary,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Đã đồng bộ',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
           if (_isPicking)
-            SafeArea(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: _PickLocationBanner(
-                  onCancel: () {
-                    setState(() {
-                      _isPicking = false;
-                    });
-                  },
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 10),
+                  ],
                 ),
-              ),
-            ),
-          const SafeArea(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: _MapModeSwitch(),
-            ),
-          ),
-          if (state.isLoading)
-            const Positioned(
-              left: 0,
-              top: 0,
-              right: 0,
-              child: LinearProgressIndicator(minHeight: 2),
-            ),
-          if (state.errorMessage != null)
-            SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: _MapStatusBanner(
-                  icon: Icons.cloud_off_outlined,
-                  label: state.errorMessage!,
-                  action: TextButton.icon(
-                    onPressed: () {
-                      controller.refresh();
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_pickedCoordinates != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.black12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${_pickedCoordinates!.lat.toStringAsFixed(5)}, ${_pickedCoordinates!.lng.toStringAsFixed(5)}',
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.my_location, size: 16),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Đặt ghim tại đây',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: MemoTheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('Giữ để chọn chính xác vị trí bạn muốn lưu.'),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: _pickedCoordinates != null
+                          ? () => _openPinEditor(context, _pickedCoordinates!)
+                          : null,
+                      icon: const Icon(Icons.location_on),
+                      label: const Text('Tiếp tục'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _isPicking = false;
+                          _pickedCoordinates = null;
+                        });
+                      },
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
-          else if (state.isEmpty)
-            const SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: _MapStatusBanner(
-                  icon: Icons.location_off_outlined,
-                  label: 'No memories here yet.',
+          else if (state.errorMessage != null)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 10),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.cloud_outlined,
+                      size: 32,
+                      color: MemoTheme.primary,
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hiển thị dữ liệu đã lưu',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Một số thay đổi của bạn sẽ được đồng bộ khi có mạng trở lại.',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    OutlinedButton(
+                      onPressed: () => controller.refresh(),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(80, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.refresh),
+                          Text('Thử lại', style: TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _isPicking = true;
-          });
-        },
-        tooltip: _isPicking ? 'Đang chọn vị trí' : 'Chọn vị trí',
-        child: Icon(
-          _isPicking
-              ? Icons.touch_app_outlined
-              : Icons.add_location_alt_outlined,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+      floatingActionButton: _isPicking || state.errorMessage != null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: FloatingActionButton(
+                backgroundColor: MemoTheme.primary,
+                foregroundColor: Colors.white,
+                onPressed: () {
+                  setState(() {
+                    _isPicking = true;
+                    _pickedCoordinates = null;
+                  });
+                },
+                child: const Icon(Icons.add, size: 32),
+              ),
+            ),
+      bottomNavigationBar: _isPicking
+          ? null
+          : BottomNavigationBar(
+              currentIndex: _bottomNavIndex,
+              onTap: _onBottomNavTapped,
+              selectedItemColor: MemoTheme.primary,
+              unselectedItemColor: Colors.grey,
+              showUnselectedLabels: true,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Bản đồ'),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.access_time),
+                  label: 'Dòng thời gian',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people_outline),
+                  label: 'Duo',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_outlined),
+                  label: 'Cài đặt',
+                ),
+              ],
+            ),
+    );
+  }
+
+  void _showPinPreview(BuildContext context, String pinId) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 80,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.image, color: Colors.grey),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Quán nhỏ Đà Lạt',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            '12 Thg 4, 2023',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Buổi sáng se lạnh, cà phê đậm và một góc nhỏ bình yên.',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _SheetAction(
+                  icon: Icons.article_outlined,
+                  label: 'Xem chi tiết',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/pins/${Uri.encodeComponent(pinId)}');
+                  },
+                ),
+                _SheetAction(
+                  icon: Icons.location_on,
+                  label: 'Xem trên bản đồ',
+                  onTap: () => Navigator.pop(context),
+                ),
+                _SheetAction(
+                  icon: Icons.share,
+                  label: 'Chia sẻ',
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -177,6 +488,39 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       },
     );
     context.push(uri.toString());
+    setState(() {
+      _isPicking = false;
+    });
+  }
+}
+
+class _SheetAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: MemoTheme.primary),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -184,120 +528,3 @@ const MapCameraPosition _initialCamera = MapCameraPosition(
   center: Coordinates(lat: 11.35, lng: 107.58),
   zoom: 6.2,
 );
-
-class _MapModeSwitch extends StatelessWidget {
-  const _MapModeSwitch();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: SegmentedButton<String>(
-        segments: const <ButtonSegment<String>>[
-          ButtonSegment<String>(
-            value: 'map',
-            icon: Icon(Icons.map_outlined),
-            label: Text('Map'),
-          ),
-          ButtonSegment<String>(
-            value: 'timeline',
-            icon: Icon(Icons.view_timeline_outlined),
-            label: Text('Timeline'),
-          ),
-        ],
-        selected: const <String>{'map'},
-        showSelectedIcon: false,
-        onSelectionChanged: (_) {
-          context.push('/timeline');
-        },
-      ),
-    );
-  }
-}
-
-class _MapStatusBanner extends StatelessWidget {
-  const _MapStatusBanner({
-    required this.icon,
-    required this.label,
-    this.action,
-  });
-
-  final IconData icon;
-  final String label;
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 360),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 88),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x26000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 18),
-          const SizedBox(width: 8),
-          Flexible(child: Text(label)),
-          if (action != null) ...<Widget>[
-            const SizedBox(width: 8),
-            action!,
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _PickLocationBanner extends StatelessWidget {
-  const _PickLocationBanner({required this.onCancel});
-
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 64, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x26000000),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const Icon(Icons.touch_app_outlined, size: 20),
-          const SizedBox(width: 10),
-          const Flexible(child: Text('Chạm vào bản đồ để chọn vị trí.')),
-          TextButton(
-            onPressed: onCancel,
-            child: const Text('Hủy'),
-          ),
-        ],
-      ),
-    );
-  }
-}

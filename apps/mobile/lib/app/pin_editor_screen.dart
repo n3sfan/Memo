@@ -94,8 +94,18 @@ class _PinEditorScreenState extends ConsumerState<PinEditorScreen> {
                   dimension: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.save_outlined),
-          label: Text(_isSaving ? 'Đang lưu...' : 'Lưu kỷ niệm'),
+              : Icon(
+                  _statusMessage == 'Đã lưu offline. Sẽ đồng bộ khi có mạng.'
+                      ? Icons.cloud_download
+                      : Icons.push_pin,
+                ),
+          label: Text(
+            _isSaving
+                ? 'Đang lưu...'
+                : (_statusMessage == 'Đã lưu offline. Sẽ đồng bộ khi có mạng.'
+                    ? 'Lưu offline'
+                    : 'Lưu kỷ niệm'),
+          ),
         ),
       ),
       body: SafeArea(
@@ -108,53 +118,111 @@ class _PinEditorScreenState extends ConsumerState<PinEditorScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      _HeaderCard(isEditing: _isEditing),
-                      const SizedBox(height: 16),
+                      _HeaderCard(coordinates: _coordinates),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Tiêu đề',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       TextFormField(
                         key: const ValueKey<String>('pin-editor-title-field'),
                         controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Tên kỷ niệm',
-                          hintText: 'Ví dụ: Cà phê Đà Lạt',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          hintText: 'Nhập tiêu đề kỷ niệm',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                         textInputAction: TextInputAction.next,
                         validator: _validateTitle,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Ghi chú',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       TextFormField(
                         key: const ValueKey<String>('pin-editor-note-field'),
                         controller: _noteController,
-                        decoration: const InputDecoration(
-                          labelText: 'Câu chuyện',
-                          hintText: 'Bạn muốn nhớ điều gì về khoảnh khắc này?',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          hintText: 'Viết vài dòng ghi chú...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
-                        minLines: 2,
-                        maxLines: 4,
+                        minLines: 3,
+                        maxLines: 5,
                         textInputAction: TextInputAction.newline,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Ngày kỷ niệm',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       InkWell(
                         key: const ValueKey<String>('pin-editor-date-field'),
                         onTap: _pickMemoryDate,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(12),
                         child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Ngày kỷ niệm',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.calendar_today_outlined),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 20,
+                            ),
                           ),
                           child: Text(_formatDate(_memoryDate)),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Vĩ độ / Kinh độ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       _LocationCard(
                         coordinates: _coordinates,
                         error: _locationError,
                         onChangeLocation: _changeLocation,
                       ),
                       const SizedBox(height: 16),
+                      const Text(
+                        'Nội dung đính kèm',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       _AttachmentSection(
                         attachments: _attachments,
                         onAdd: _addAttachment,
@@ -173,7 +241,7 @@ class _PinEditorScreenState extends ConsumerState<PinEditorScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 88),
+                      const SizedBox(height: 48),
                     ],
                   ),
                 ),
@@ -346,41 +414,80 @@ class _PinEditorScreenState extends ConsumerState<PinEditorScreen> {
 }
 
 class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.isEditing});
+  const _HeaderCard({required this.coordinates});
 
-  final bool isEditing;
+  final Coordinates? coordinates;
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.primaryContainer,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              isEditing ? Icons.edit_location_alt_outlined : Icons.add_location,
-              color: colors.onPrimaryContainer,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                isEditing
-                    ? 'Cập nhật câu chuyện, ngày, vị trí và tệp đính kèm.'
-                    : 'Lưu lại khoảnh khắc tại đúng nơi nó diễn ra.',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colors.onPrimaryContainer,
-                    ),
+    return Column(
+      children: [
+        Container(
+          height: 120,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Stack(
+            children: [
+              // Map background mock
+              const Center(
+                child: Icon(Icons.map, size: 64, color: Colors.black12),
               ),
-            ),
-          ],
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      size: 36,
+                      color: Color(0xFFB5935A),
+                    ),
+                    if (coordinates != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${coordinates!.lat.toStringAsFixed(4)}° N, ${coordinates!.lng.toStringAsFixed(4)}° E',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black12),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.lock_outline, size: 16, color: Colors.black54),
+              SizedBox(width: 8),
+              Text(
+                'Chỉ mình tôi · Hiển thị trên bản đồ cá nhân',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -398,65 +505,89 @@ class _LocationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasLocation = _isValidLatitude(coordinates?.lat) &&
-        _isValidLongitude(coordinates?.lng);
-    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool hasError = error != null;
 
-    return Card(
-      key: const ValueKey<String>('pin-editor-location-card'),
-      margin: EdgeInsets.zero,
-      color:
-          error == null ? null : colors.errorContainer.withValues(alpha: 0.35),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            CircleAvatar(
-              backgroundColor: hasLocation
-                  ? colors.secondaryContainer
-                  : colors.errorContainer,
-              child: Icon(
-                hasLocation
-                    ? Icons.my_location_outlined
-                    : Icons.location_disabled_outlined,
-                color: hasLocation
-                    ? colors.onSecondaryContainer
-                    : colors.onErrorContainer,
-              ),
-            ),
-            const SizedBox(width: 12),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    hasLocation ? 'Vị trí đã chọn' : 'Chưa chọn vị trí',
-                    style: Theme.of(context).textTheme.titleSmall,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: hasError ? const Color(0xFFD67D6F) : Colors.black12,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    hasLocation
-                        ? 'Đã lưu điểm trên bản đồ cho kỷ niệm này.'
-                        : 'Hãy chọn một điểm trên bản đồ trước khi lưu.',
-                  ),
-                  if (error != null) ...<Widget>[
-                    const SizedBox(height: 6),
-                    Text(
-                      error!,
-                      style: TextStyle(color: colors.error),
+                  borderRadius: BorderRadius.circular(12),
+                  color: hasError ? const Color(0xFFFDECEA) : null,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 20,
+                      color: hasError
+                          ? const Color(0xFFD67D6F)
+                          : const Color(0xFF3B5B43),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        coordinates != null
+                            ? '${coordinates!.lat.toStringAsFixed(4)}° N    /    ${coordinates!.lng.toStringAsFixed(4)}° E'
+                            : 'Chưa chọn vị trí',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: hasError
+                              ? const Color(0xFFD67D6F)
+                              : Colors.black87,
+                        ),
+                      ),
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-            TextButton(
-              onPressed: onChangeLocation,
-              child: Text(hasLocation ? 'Đổi vị trí' : 'Chọn vị trí'),
             ),
           ],
         ),
-      ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 16,
+                  color: Color(0xFFD67D6F),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  error!,
+                  style: const TextStyle(
+                    color: Color(0xFFD67D6F),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onChangeLocation,
+                    child: const Text('Chọn lại trên bản đồ'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -474,54 +605,191 @@ class _AttachmentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Tệp đính kèm',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                OutlinedButton.icon(
-                  key: const ValueKey<String>('pin-editor-add-image'),
-                  onPressed: () => onAdd(PinMediaType.image),
-                  icon: const Icon(Icons.image_outlined),
-                  label: const Text('Chọn ảnh'),
-                ),
-                OutlinedButton.icon(
-                  key: const ValueKey<String>('pin-editor-add-text'),
-                  onPressed: () => onAdd(PinMediaType.text),
-                  icon: const Icon(Icons.notes_outlined),
-                  label: const Text('Tệp văn bản'),
-                ),
-                OutlinedButton.icon(
-                  key: const ValueKey<String>('pin-editor-add-audio'),
-                  onPressed: () => onAdd(PinMediaType.audio),
-                  icon: const Icon(Icons.graphic_eq_outlined),
-                  label: const Text('Âm thanh'),
-                ),
-              ],
-            ),
-            if (attachments.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 12),
-              ...attachments.map((PinEditorAttachmentDraft draft) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _AttachmentTile(
-                    draft: draft,
-                    onRemove: onRemove,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (attachments.isEmpty)
+          InkWell(
+            key: const ValueKey<String>('pin-editor-add-content'),
+            onTap: () => _showAddContentSheet(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F1EB),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: Colors.black12, style: BorderStyle.solid),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.add, color: Colors.black54),
                   ),
-                );
-              }),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Thêm nội dung',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          'Ảnh, văn bản hoặc ghi âm',
+                          style: TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (attachments.isNotEmpty) ...[
+          ...attachments.map((PinEditorAttachmentDraft draft) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _AttachmentTile(
+                draft: draft,
+                onRemove: onRemove,
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey<String>('pin-editor-add-content'),
+            onPressed: () => _showAddContentSheet(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Thêm nội dung khác'),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showAddContentSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(width: 24),
+                  const Text(
+                    'Thêm nội dung',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _AddContentAction(
+                key: const ValueKey<String>('pin-editor-add-image'),
+                icon: Icons.image,
+                title: 'Ảnh',
+                subtitle: 'Thêm ảnh từ thư viện hoặc chụp mới',
+                onTap: () {
+                  Navigator.pop(context);
+                  onAdd(PinMediaType.image);
+                },
+              ),
+              _AddContentAction(
+                key: const ValueKey<String>('pin-editor-add-text'),
+                icon: Icons.notes,
+                title: 'Văn bản',
+                subtitle: 'Ghi lại suy nghĩ hoặc câu chuyện',
+                onTap: () {
+                  Navigator.pop(context);
+                  onAdd(PinMediaType.text);
+                },
+              ),
+              _AddContentAction(
+                key: const ValueKey<String>('pin-editor-add-audio'),
+                icon: Icons.mic,
+                title: 'Ghi âm',
+                subtitle: 'Ghi lại âm thanh hoặc giọng nói',
+                onTap: () {
+                  Navigator.pop(context);
+                  onAdd(PinMediaType.audio);
+                },
+              ),
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AddContentAction extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _AddContentAction({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 32, color: const Color(0xFF3B5B43)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -540,22 +808,44 @@ class _AttachmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        border: Border.all(color: Colors.black12),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ListTile(
-        minLeadingWidth: 40,
-        leading: _AttachmentLeading(draft: draft),
-        title: Text(draft.label),
-        subtitle: Text(_formatBytes(draft.sizeBytes)),
-        trailing: IconButton(
-          key: ValueKey<String>('pin-editor-remove-${draft.id}'),
-          onPressed: () => onRemove(draft.id),
-          icon: const Icon(Icons.close),
-          tooltip: 'Xóa tệp',
-        ),
+      child: Row(
+        children: [
+          _AttachmentLeading(draft: draft),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  draft.label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  draft.mediaType == PinMediaType.audio
+                      ? '00:00 - Chờ đồng bộ'
+                      : 'Đã thêm',
+                  style: const TextStyle(color: Colors.black54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            key: ValueKey<String>('pin-editor-remove-${draft.id}'),
+            onPressed: () => onRemove(draft.id),
+            icon: const Icon(Icons.close, color: Colors.black54),
+            tooltip: 'Xóa tệp',
+          ),
+        ],
       ),
     );
   }
@@ -574,20 +864,27 @@ class _AttachmentLeading extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Image.file(
           File(draft.localPath),
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           fit: BoxFit.cover,
         ),
       );
     }
 
-    return CircleAvatar(
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F1EB),
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Icon(
         switch (draft.mediaType) {
           PinMediaType.image => Icons.image_outlined,
           PinMediaType.text => Icons.notes_outlined,
-          PinMediaType.audio => Icons.mic_none_outlined,
+          PinMediaType.audio => Icons.play_arrow,
         },
+        color: const Color(0xFF3B5B43),
       ),
     );
   }
@@ -968,16 +1265,6 @@ String _formatDate(DateTime value) {
   return '${utc.year.toString().padLeft(4, '0')}-'
       '${utc.month.toString().padLeft(2, '0')}-'
       '${utc.day.toString().padLeft(2, '0')}';
-}
-
-String _formatBytes(int value) {
-  if (value < 1024) {
-    return '$value B';
-  }
-  if (value < 1024 * 1024) {
-    return '${(value / 1024).toStringAsFixed(1)} KB';
-  }
-  return '${(value / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
 String createAttachmentId(PinMediaType mediaType) {
