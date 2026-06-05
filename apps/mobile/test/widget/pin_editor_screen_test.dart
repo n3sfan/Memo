@@ -104,8 +104,8 @@ void main() {
       initialCoordinates: _coordinates,
     );
 
-    expect(find.text('Câu chuyện'), findsOneWidget);
-    expect(find.text('Tệp văn bản'), findsOneWidget);
+    expect(find.text('Ghi chú'), findsOneWidget);
+    expect(find.text('Nội dung đính kèm'), findsOneWidget);
     expect(find.text('Thêm ghi chú'), findsNothing);
   });
 
@@ -120,6 +120,7 @@ void main() {
       attachmentActions: const DefaultPinEditorAttachmentActions(),
     );
 
+    await _openAddContentSheet(tester);
     await tester
         .tap(find.byKey(const ValueKey<String>('pin-editor-add-audio')));
     await tester.pumpAndSettle();
@@ -150,12 +151,9 @@ void main() {
       attachmentActions: _FakeAttachmentActions(),
     );
 
-    await tester
-        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
-    await tester.tap(find.byKey(const ValueKey<String>('pin-editor-add-text')));
-    await tester
-        .tap(find.byKey(const ValueKey<String>('pin-editor-add-audio')));
-    await tester.pump();
+    await _addAttachment(tester, 'pin-editor-add-image');
+    await _addAttachment(tester, 'pin-editor-add-text');
+    await _addAttachment(tester, 'pin-editor-add-audio');
 
     expect(find.text('photo.jpg'), findsOneWidget);
     expect(find.text('story.txt'), findsOneWidget);
@@ -189,9 +187,7 @@ void main() {
     );
 
     await _fillValidPinForm(tester);
-    await tester
-        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
-    await tester.pump();
+    await _addAttachment(tester, 'pin-editor-add-image');
     await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
     await _pumpAsync(tester);
 
@@ -226,9 +222,7 @@ void main() {
     );
 
     await _fillValidPinForm(tester);
-    await tester
-        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
-    await tester.pump();
+    await _addAttachment(tester, 'pin-editor-add-image');
     await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
     await _pumpAsync(tester);
 
@@ -256,9 +250,7 @@ void main() {
     );
 
     await _fillValidPinForm(tester);
-    await tester
-        .tap(find.byKey(const ValueKey<String>('pin-editor-add-image')));
-    await tester.pump();
+    await _addAttachment(tester, 'pin-editor-add-image');
     await tester.tap(find.byKey(const ValueKey<String>('pin-editor-save')));
     await _pumpAsync(tester);
 
@@ -337,6 +329,20 @@ Future<void> _fillValidPinForm(WidgetTester tester) async {
     find.byKey(const ValueKey<String>('pin-editor-note-field')),
     'Một buổi sáng yên tĩnh.',
   );
+}
+
+Future<void> _openAddContentSheet(WidgetTester tester) async {
+  final Finder addContent =
+      find.byKey(const ValueKey<String>('pin-editor-add-content'));
+  await tester.ensureVisible(addContent);
+  await tester.tap(addContent);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _addAttachment(WidgetTester tester, String actionKey) async {
+  await _openAddContentSheet(tester);
+  await tester.tap(find.byKey(ValueKey<String>(actionKey)));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpAsync(WidgetTester tester) async {

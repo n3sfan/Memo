@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/router.dart';
+import 'app/theme.dart';
 import 'auth/auth_controller.dart';
 
 void main() {
@@ -23,8 +24,9 @@ class MemoryMapApp extends ConsumerWidget {
     });
 
     return MaterialApp.router(
-      title: 'Memory Map',
+      title: 'Memo',
       debugShowCheckedModeBanner: false,
+      theme: MemoTheme.lightTheme,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

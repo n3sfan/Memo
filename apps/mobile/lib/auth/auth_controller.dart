@@ -191,12 +191,20 @@ class AuthController extends Notifier<AuthState> {
 
   static String redirectUriFor(OAuthProviderType provider) {
     if (kIsWeb) {
-      const String callbackBaseUrl = String.fromEnvironment(
+      const String callbackBaseUrlOverride = String.fromEnvironment(
         'OAUTH_CALLBACK_BASE_URL',
+      );
+      const String apiBaseUrl = String.fromEnvironment(
+        'API_BASE_URL',
         defaultValue: 'http://localhost:3000/api/v1',
       );
+      final String callbackBaseUrl = callbackBaseUrlOverride.isNotEmpty
+          ? callbackBaseUrlOverride
+          : apiBaseUrl;
+      final String normalizedBaseUrl =
+          callbackBaseUrl.replaceFirst(RegExp(r'/+$'), '');
 
-      return '$callbackBaseUrl/auth/oauth/${provider.pathSegment}/callback';
+      return '$normalizedBaseUrl/auth/oauth/${provider.pathSegment}/callback';
     }
 
     return 'memo://oauth/${provider.pathSegment}';

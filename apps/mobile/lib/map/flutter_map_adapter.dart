@@ -24,39 +24,47 @@ class _OpenStreetMapViewState extends State<_OpenStreetMapView> {
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-      mapController: _controller,
-      options: MapOptions(
-        initialCenter: _toLatLng(widget.config.initialCamera.center),
-        initialZoom: widget.config.initialCamera.zoom,
-        minZoom: 3,
-        maxZoom: 18,
-        onMapReady: _emitCurrentBounds,
-        onPositionChanged: (MapCamera camera, bool hasGesture) {
-          _emitBounds(camera);
-        },
-        onTap: (_, LatLng point) {
-          widget.config.onTap(
-            Coordinates(lat: point.latitude, lng: point.longitude),
-          );
-        },
-        onLongPress: (_, LatLng point) {
-          widget.config.onLongPress(
-            Coordinates(lat: point.latitude, lng: point.longitude),
-          );
-        },
-      ),
-      children: <Widget>[
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.memodev.memory_map_mobile',
-        ),
-        MarkerLayer(
-          markers: widget.config.markers.map(_buildMarker).toList(
-                growable: false,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          child: FlutterMap(
+            mapController: _controller,
+            options: MapOptions(
+              initialCenter: _toLatLng(widget.config.initialCamera.center),
+              initialZoom: widget.config.initialCamera.zoom,
+              minZoom: 3,
+              maxZoom: 18,
+              onMapReady: _emitCurrentBounds,
+              onPositionChanged: (MapCamera camera, bool hasGesture) {
+                _emitBounds(camera);
+              },
+              onTap: (_, LatLng point) {
+                widget.config.onTap(
+                  Coordinates(lat: point.latitude, lng: point.longitude),
+                );
+              },
+              onLongPress: (_, LatLng point) {
+                widget.config.onLongPress(
+                  Coordinates(lat: point.latitude, lng: point.longitude),
+                );
+              },
+            ),
+            children: <Widget>[
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.memodev.memory_map_mobile',
               ),
-        ),
-      ],
+              MarkerLayer(
+                markers: widget.config.markers.map(_buildMarker).toList(
+                      growable: false,
+                    ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

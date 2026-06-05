@@ -4,6 +4,7 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
@@ -12,6 +13,9 @@ import { ApiErrorBody } from './api-envelope';
 
 interface HttpRequestLike {
   headers: Record<string, string | string[] | undefined>;
+  method?: string;
+  url?: string;
+  originalUrl?: string;
 }
 
 interface HttpResponseLike {
@@ -22,11 +26,14 @@ interface HttpResponseLike {
 
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter<unknown> {
+  private readonly logger = new Logger(ApiExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
     const request = http.getRequest<HttpRequestLike>();
     const response = http.getResponse<HttpResponseLike>();
     const status = this.statusFromException(exception);
+    this.logUnexpectedException(exception, status, request);
 
     response.status(status).json({
       error: this.errorCodeFromException(exception, status),
@@ -144,5 +151,24 @@ export class ApiExceptionFilter implements ExceptionFilter<unknown> {
 
   private generateRequestId(): string {
     return `req_${randomUUID()}`;
+  }
+
+  private logUnexpectedException(
+    exception: unknown,
+    status: number,
+    request: HttpRequestLike,
+  ): void {
+    if (exception instanceof HttpException || status < HttpStatus.INTERNAL_SERVER_ERROR) {
+      return;
+    }
+
+    const method = request.method ?? 'UNKNOWN';
+    const path = request.originalUrl ?? request.url ?? 'UNKNOWN';
+    const exceptionType =
+      exception instanceof Error ? exception.name : typeof exception;
+
+    this.logger.error(
+      `Unexpected API exception: ${method} ${path} -> ${status} (${exceptionType})`,
+    );
   }
 }

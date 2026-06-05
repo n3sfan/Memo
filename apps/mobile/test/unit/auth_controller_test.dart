@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:memory_map_mobile/auth/auth_controller.dart';
 import 'package:memory_map_mobile/auth/oauth_launcher.dart';
 import 'package:memory_map_mobile/auth/session.dart';
+import 'package:memory_map_mobile/auth/token_storage.dart';
 import 'package:memory_map_mobile/data/models/models.dart';
+import 'package:memory_map_mobile/data/mock/fake_auth_repository.dart';
 import 'package:memory_map_mobile/data/repositories/auth_repository.dart';
 import 'package:memory_map_mobile/data/repository_providers.dart';
 
@@ -170,6 +172,25 @@ void main() {
       expect(
         container.read<AuthState>(authControllerProvider).errorMessage,
         contains('cancelled'),
+      );
+    });
+  });
+
+  group('FakeAuthRepository OAuth', () {
+    test('returns an app callback instead of opening the API callback',
+        () async {
+      final FakeAuthRepository repository = FakeAuthRepository(
+        InMemoryTokenStorage(),
+      );
+
+      final OAuthStartResponseDto response = await repository.startOAuth(
+        provider: OAuthProviderType.google,
+        redirectUri: 'http://localhost:3020/api/v1/auth/oauth/google/callback',
+      );
+
+      expect(
+        response.authorizationUrl,
+        'memo://oauth/google?code=mock_google_code&state=mock_state',
       );
     });
   });

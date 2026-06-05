@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
 import '../data/models/models.dart';
+import 'duo_screen.dart';
 import 'login_screen.dart';
 import 'map_screen.dart';
 import 'pin_detail_screen.dart';
 import 'pin_editor_screen.dart';
+import 'settings_screen.dart';
 import 'timeline_screen.dart';
 
 final _routerRefreshProvider = Provider<Listenable>((ref) {
@@ -87,6 +89,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TimelineScreen(),
       ),
       GoRoute(
+        path: '/duo',
+        builder: (context, state) => const DuoScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
         path: '/pins/new',
         builder: (context, state) {
           return PinEditorScreen(
@@ -143,16 +153,188 @@ Coordinates? _coordinatesFromQuery(Uri uri) {
   return Coordinates(lat: lat, lng: lng);
 }
 
-class PublicSharedPinScreen extends StatelessWidget {
+class PublicSharedPinScreen extends StatefulWidget {
   const PublicSharedPinScreen({required this.token, super.key});
 
   final String token;
 
   @override
+  State<PublicSharedPinScreen> createState() => _PublicSharedPinScreenState();
+}
+
+class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
+  // Mock state for design demonstration
+  bool isRevoked = false;
+
+  @override
   Widget build(BuildContext context) {
+    if (isRevoked) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Khoảnh khắc được chia sẻ', style: TextStyle(fontWeight: FontWeight.bold)),
+          centerTitle: true,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.black12),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock_outline, size: 14),
+                      SizedBox(width: 6),
+                      Text('Chỉ xem ghim này', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ),
+              const Spacer(),
+              const Center(child: Icon(Icons.map_outlined, size: 80, color: Colors.black12)),
+              const SizedBox(height: 16),
+              const Center(child: Icon(Icons.cancel, size: 48, color: Color(0xFFD67D6F))),
+              const SizedBox(height: 32),
+              const Text(
+                'Liên kết đã thu hồi',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Kỷ niệm này không còn khả dụng.\nLiên kết chia sẻ có thể đã hết hạn\nhoặc đã bị thu hồi.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Về trang đăng nhập'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Shared Memory')),
-      body: Center(child: Text(token)),
+      appBar: AppBar(
+        title: const Text('Khoảnh khắc được chia sẻ', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.black12),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.lock_outline, size: 14),
+                    SizedBox(width: 6),
+                    Text('Chỉ xem ghim này', style: TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              height: 160,
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(16),
+                image: const DecorationImage(
+                  image: NetworkImage('https://tile.openstreetmap.org/13/6511/3850.png'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+              child: const Center(
+                child: Icon(Icons.location_on, size: 48, color: Color(0xFFB5935A)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 200,
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(16),
+                image: const DecorationImage(
+                  image: NetworkImage('https://images.unsplash.com/photo-1542314831-c6a4d14d8c85'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Quán nhỏ Đà Lạt', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 14, color: Colors.black54),
+                      SizedBox(width: 4),
+                      Text('12 tháng 5, 2025 · 19:15', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Buổi tối se lạnh, ngồi đây nghe nhạc cũ,\nuống ly cacao nóng. Bình yên.',
+                    style: TextStyle(height: 1.5),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('11.9406° N, 108.4583° E'),
+                        Spacer(),
+                        Icon(Icons.copy, size: 16, color: Colors.black54),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  FilledButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.map),
+                    label: const Text('Mở bằng Memo'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Center(
+                    child: Text(
+                      'Bạn sẽ được hướng dẫn cài đặt ứng dụng.',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

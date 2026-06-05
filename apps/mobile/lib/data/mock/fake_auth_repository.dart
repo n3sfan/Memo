@@ -20,8 +20,8 @@ class FakeAuthRepository implements AuthRepository {
     required String redirectUri,
   }) async {
     return OAuthStartResponseDto(
-      authorizationUrl:
-          '$redirectUri?code=mock_${provider.pathSegment}_code&state=mock_state',
+      authorizationUrl: 'memo://oauth/${provider.pathSegment}'
+          '?code=mock_${provider.pathSegment}_code&state=mock_state',
       state: 'mock_state',
     );
   }
