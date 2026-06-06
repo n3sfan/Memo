@@ -54,6 +54,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          useMockRepositoriesProvider.overrideWithValue(true),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
