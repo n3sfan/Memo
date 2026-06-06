@@ -2,8 +2,8 @@
 
 Flutter client for Memo.
 
-The app uses mock repositories by default, so it can launch without the backend.
-Use `USE_MOCK_DATA=false` only when you want to call the API.
+The app calls the real API by default. Use mock data only when you explicitly
+pass `USE_MOCK_DATA=true`.
 
 ## Setup
 
@@ -24,13 +24,13 @@ If Flutter is not on `PATH` on Windows:
 ## Run With Mock Data
 
 ```powershell
-flutter run
+flutter run --dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false
 ```
 
 Pick a specific device:
 
 ```powershell
-flutter run -d <device-id>
+flutter run -d <device-id> --dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false
 ```
 
 ## Run In Chrome
@@ -43,13 +43,17 @@ flutter run -d chrome
 With the real API on the same machine:
 
 ```powershell
-flutter run -d chrome --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://127.0.0.1:3000/api/v1
+flutter run -d chrome
 ```
 
-Use a fixed browser port:
+Flutter web uses `localhost:5000` from `web_dev_config.yaml`. Keep Chrome on
+`http://localhost:5000` for OAuth; using `127.0.0.1:5000` creates a different
+browser origin and can break the login callback.
+
+Equivalent explicit command:
 
 ```powershell
-flutter run -d chrome --web-hostname 127.0.0.1 --web-port 8080
+flutter run -d chrome --web-hostname localhost --web-port 5000
 ```
 
 ## Run On Android Emulator
@@ -63,11 +67,11 @@ flutter run -d emulator-5554
 To call the API running on the Windows host from the Android emulator:
 
 ```powershell
-flutter run -d emulator-5554 --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 ```
 
 Use `10.0.2.2` for Android emulator access to the host machine. Use
-`127.0.0.1` only for Windows/web runs on the host.
+`localhost:5000` for Windows/web runs on the host.
 
 ## Run On macOS iOS Simulator
 

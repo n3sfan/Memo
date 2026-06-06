@@ -69,11 +69,53 @@ The object upload client uses a separate Dio client and must not use the API
 auth interceptor, because presigned URLs are already authorized by the backend.
 The backend stores only the registered metadata and object key.
 
-The default provider mode is mock data. Feature owners can build Map View, Pin
-Editor and Timeline before backend APIs are ready. To use the real backend, run
-with `--dart-define=USE_MOCK_DATA=false`.
+The default provider mode is the real API. Feature owners can still build Map
+View, Pin Editor and Timeline without backend dependencies by running with
+`--dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false`.
 
 Map View should depend on `mapViewControllerProvider` and the project-owned map
 port in `apps/mobile/lib/map`. UI code must not import concrete map SDK
 packages directly; provider-specific code belongs in an adapter such as
 `flutter_map_adapter.dart`.
+
+## Duo Map
+
+Duo UI should depend on `duoControllerProvider`, which in turn depends on
+`mapRepositoryProvider`. UI code must not call `ApiClient`, Dio or endpoint
+paths directly.
+
+Create a Duo Map and owner invitation:
+
+```dart
+await ref.read(duoControllerProvider.notifier).createDuoMap();
+```
+
+For lower-level flows, use the repository:
+
+```dart
+final map = await ref.read(mapRepositoryProvider).createDuoMap();
+final invitation = await ref.read(mapRepositoryProvider).createInvitation(
+  mapId: map.id,
+);
+```
+
+Accept a code or pasted link:
+
+```dart
+ref
+    .read(duoControllerProvider.notifier)
+    .openJoinForm('https://memo.app/inv/INV-7QK2');
+await ref.read(duoControllerProvider.notifier).acceptInvitation();
+```
+
+The repository normalizes pasted links to `INV-...` before calling:
+
+```http
+POST /api/v1/invitations/:code/accept
+```
+
+Duo-specific API errors should stay inline on the Duo screen:
+
+- `409 invitation_pending_exists`: owner already has one pending invite.
+- `409 map_full`: the Duo Map already has two accepted members.
+- `410 invalid_invitation`: the code is expired, revoked, accepted or invalid.

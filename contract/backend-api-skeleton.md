@@ -45,10 +45,27 @@ Files:
 - `POST /invitations/:code/accept`
 - `DELETE /maps/:mapId/members/:userId`
 
+Implemented behavior:
+
+- `GET /maps` returns maps where the authenticated user is a member.
+- `GET /maps/default` returns the user's personal map.
+- `POST /maps/duo` creates a Duo Map and owner membership.
+- `POST /maps/:mapId/invitations` creates one fresh pending invitation per
+  Duo Map, expires stale pending invitations first and returns `409` for
+  duplicate pending invites or full maps.
+- `DELETE /maps/:mapId/invitations/:invitationId` revokes a fresh pending
+  invitation.
+- `POST /invitations/:code/accept` locks the invitation row, rejects expired,
+  revoked, accepted or self/member reuse, enforces the two-member cap and marks
+  accepted invitations as used.
+- `DELETE /maps/:mapId/members/:userId` lets the owner remove a non-owner
+  member.
+
 Files:
 
 - `apps/api/src/modules/maps/maps.controller.ts`
 - `apps/api/src/modules/maps/maps.service.ts`
+- `apps/api/src/modules/maps/repositories`
 
 ## Pins
 

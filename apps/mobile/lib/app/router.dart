@@ -93,6 +93,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DuoScreen(),
       ),
       GoRoute(
+        path: '/inv/:code',
+        builder: (context, state) {
+          final String code = state.pathParameters['code'] ?? '';
+
+          return DuoScreen(initialInvitationCode: code);
+        },
+      ),
+      GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
@@ -171,7 +179,10 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
     if (isRevoked) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Khoảnh khắc được chia sẻ', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            'Khoảnh khắc được chia sẻ',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           centerTitle: true,
         ),
         body: Padding(
@@ -181,7 +192,8 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
             children: [
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: Colors.black12),
@@ -198,9 +210,17 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
                 ),
               ),
               const Spacer(),
-              const Center(child: Icon(Icons.map_outlined, size: 80, color: Colors.black12)),
+              const Center(
+                child: Icon(
+                  Icons.map_outlined,
+                  size: 80,
+                  color: Colors.black12,
+                ),
+              ),
               const SizedBox(height: 16),
-              const Center(child: Icon(Icons.cancel, size: 48, color: Color(0xFFD67D6F))),
+              const Center(
+                child: Icon(Icons.cancel, size: 48, color: Color(0xFFD67D6F)),
+              ),
               const SizedBox(height: 32),
               const Text(
                 'Liên kết đã thu hồi',
@@ -226,7 +246,10 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Khoảnh khắc được chia sẻ', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Khoảnh khắc được chia sẻ',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -235,7 +258,8 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
           children: [
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: Colors.black12),
@@ -259,12 +283,15 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(16),
                 image: const DecorationImage(
-                  image: NetworkImage('https://tile.openstreetmap.org/13/6511/3850.png'),
+                  image: NetworkImage(
+                    'https://tile.openstreetmap.org/13/6511/3850.png',
+                  ),
                   fit: BoxFit.cover,
                 ),
               ),
               child: const Center(
-                child: Icon(Icons.location_on, size: 48, color: Color(0xFFB5935A)),
+                child:
+                    Icon(Icons.location_on, size: 48, color: Color(0xFFB5935A)),
               ),
             ),
             const SizedBox(height: 16),
@@ -275,7 +302,9 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(16),
                 image: const DecorationImage(
-                  image: NetworkImage('https://images.unsplash.com/photo-1542314831-c6a4d14d8c85'),
+                  image: NetworkImage(
+                    'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85',
+                  ),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -285,13 +314,23 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Quán nhỏ Đà Lạt', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Quán nhỏ Đà Lạt',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   const Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.black54),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: Colors.black54,
+                      ),
                       SizedBox(width: 4),
-                      Text('12 tháng 5, 2025 · 19:15', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                      Text(
+                        '12 tháng 5, 2025 · 19:15',
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -301,7 +340,10 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
                   ),
                   const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.black12),
                       borderRadius: BorderRadius.circular(12),
