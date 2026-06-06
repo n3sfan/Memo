@@ -93,6 +93,37 @@ export function throwConflict(
   throw new ApiException(HttpStatus.CONFLICT, 'conflict', message, details);
 }
 
+export function throwInvitationPendingExists(
+  message = 'A pending invitation already exists for this map.',
+  details: ApiErrorDetails = {},
+): never {
+  throw new ApiException(
+    HttpStatus.CONFLICT,
+    'invitation_pending_exists',
+    message,
+    details,
+  );
+}
+
+export function throwMapFull(
+  message = 'This Duo Map already has two members.',
+  details: ApiErrorDetails = {},
+): never {
+  throw new ApiException(HttpStatus.CONFLICT, 'map_full', message, details);
+}
+
+export function throwInvalidInvitation(
+  message = 'Invitation is invalid, expired, revoked or already used.',
+  details: ApiErrorDetails = {},
+): never {
+  throw new ApiException(
+    HttpStatus.GONE,
+    'invalid_invitation',
+    message,
+    details,
+  );
+}
+
 export function throwInternalError(
   message = 'Internal server error.',
   details: ApiErrorDetails = {},

@@ -83,6 +83,39 @@ class _FakeMapRepository implements MapRepository {
   Future<List<MapDto>> listMaps() async {
     return <MapDto>[map];
   }
+
+  @override
+  Future<MapDto> createDuoMap({String? name}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<InvitationDto> createInvitation({required String mapId}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> revokeInvitation({
+    required String mapId,
+    required String invitationId,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AcceptInvitationResponseDto> acceptInvitation({
+    required String code,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<RemoveMapMemberResponseDto> removeMember({
+    required String mapId,
+    required String userId,
+  }) {
+    throw UnimplementedError();
+  }
 }
 
 class _RecordingPinRepository implements PinRepository {

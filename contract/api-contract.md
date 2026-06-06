@@ -219,6 +219,182 @@ token passes the guard.
 - Account export/delete access is self-only.
 - Public share-link access is resolved by a non-revoked share token.
 
+## Maps and Duo
+
+Map DTO:
+
+```json
+{
+  "id": "map_duo_1",
+  "type": "duo",
+  "ownerId": "user_1",
+  "name": null,
+  "members": [
+    {
+      "mapId": "map_duo_1",
+      "userId": "user_1",
+      "role": "owner",
+      "joinedAt": "2026-06-06T00:00:00.000Z"
+    }
+  ],
+  "pendingInvitation": {
+    "id": "inv_1",
+    "mapId": "map_duo_1",
+    "code": "INV-7QK2",
+    "status": "pending",
+    "expiresAt": "2026-06-13T00:00:00.000Z",
+    "createdAt": "2026-06-06T00:00:00.000Z"
+  }
+}
+```
+
+Valid map types are `personal` and `duo`. Valid member roles are `owner` and
+`member`. Valid invitation statuses are `pending`, `accepted`, `revoked` and
+`expired`.
+
+List maps for the authenticated user:
+
+```http
+GET /api/v1/maps
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "maps": []
+  },
+  "requestId": "req_..."
+}
+```
+
+Get the user's default personal map:
+
+```http
+GET /api/v1/maps/default
+```
+
+Response: `Map DTO`.
+
+Create a Duo Map:
+
+```http
+POST /api/v1/maps/duo
+```
+
+Body:
+
+```json
+{
+  "name": "Our memories"
+}
+```
+
+`name` is optional. The backend creates the Duo Map and adds the authenticated
+user as the `owner` member. Response: `Map DTO`.
+
+Create a Duo invitation:
+
+```http
+POST /api/v1/maps/:mapId/invitations
+```
+
+Only the map owner may create invitations. A Duo Map may have at most one fresh
+pending invitation, and a Duo Map may have at most two accepted members.
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "inv_1",
+    "mapId": "map_duo_1",
+    "code": "INV-7QK2",
+    "status": "pending",
+    "expiresAt": "2026-06-13T00:00:00.000Z",
+    "createdAt": "2026-06-06T00:00:00.000Z"
+  },
+  "requestId": "req_..."
+}
+```
+
+Invitation creation errors:
+
+- `409 invitation_pending_exists`: a fresh pending invitation already exists.
+- `409 map_full`: the Duo Map already has two members.
+- `422 validation_error`: the map is not a Duo Map.
+
+Revoke a pending invitation:
+
+```http
+DELETE /api/v1/maps/:mapId/invitations/:invitationId
+```
+
+Only the owner may revoke. Response:
+
+```json
+{
+  "data": {
+    "ok": true
+  },
+  "requestId": "req_..."
+}
+```
+
+Accept an invitation:
+
+```http
+POST /api/v1/invitations/:code/accept
+```
+
+The backend normalizes invite codes to uppercase. Acceptance runs in a
+transaction, locks the invitation row, rejects already-used membership, enforces
+the two-member cap, creates the second `member`, then marks the invitation
+`accepted`.
+
+Response:
+
+```json
+{
+  "data": {
+    "map": {
+      "id": "map_duo_1",
+      "type": "duo",
+      "ownerId": "user_1",
+      "name": null,
+      "members": []
+    },
+    "membershipRole": "member"
+  },
+  "requestId": "req_..."
+}
+```
+
+Invitation acceptance errors:
+
+- `410 invalid_invitation`: code is missing, expired, revoked, accepted, owned
+  by an existing member, or otherwise invalid.
+- `409 map_full`: another member accepted first and the map is now full.
+
+Remove a Duo member:
+
+```http
+DELETE /api/v1/maps/:mapId/members/:userId
+```
+
+Only the owner may remove a non-owner Duo member. The owner cannot remove
+themselves through this endpoint. Response:
+
+```json
+{
+  "data": {
+    "removed": true
+  },
+  "requestId": "req_..."
+}
+```
+
 ## Pins
 
 Pin DTO:
@@ -490,16 +666,22 @@ Feature code must not call HTTP directly. UI and use cases should depend on:
 ApiClient -> Repository -> UI
 ```
 
-Mock repositories are enabled by default with:
+Real API repositories are enabled by default with:
 
 ```text
-USE_MOCK_DATA=true
+USE_MOCK_DATA=false
 ```
 
-Switch to real API with:
+Run with the local real API:
 
 ```bash
-flutter run --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://127.0.0.1:3000/api/v1
+flutter run --dart-define=API_BASE_URL=http://127.0.0.1:3000/api/v1
+```
+
+Switch to mock repositories with:
+
+```bash
+flutter run --dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false
 ```
 
 ## Token Storage

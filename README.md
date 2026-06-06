@@ -145,9 +145,17 @@ docker compose down -v
 
 ## Chạy Backend Không Qua Docker
 
-Hiện cách khuyến nghị là chạy API bằng Docker Compose vì `docker-compose.yml` đang để API nói chuyện với Postgres/Redis qua network nội bộ Docker.
+Cách dev local khuyến nghị là chạy Postgres/Redis bằng Docker Compose và chạy API trên host:
 
-Nếu muốn chạy `pnpm api:start:dev` trên host, cần publish cổng Postgres/Redis ra localhost trong `docker-compose.yml` hoặc tự cài Postgres/Redis local. Phần này chưa được chuẩn hóa vì task hiện tại mới dừng ở hạ tầng Docker.
+```powershell
+pnpm install
+docker compose up -d --wait postgres redis
+pnpm api:start:dev
+```
+
+`pnpm api:start:dev` tự chạy `prisma generate` và `prisma migrate deploy` trước khi NestJS start. Vì vậy sau khi pull code mới, reset database hoặc đổi Prisma schema, bạn không cần chạy riêng hai lệnh Prisma này cho flow dev thông thường.
+
+Nếu cần chạy thủ công:
 
 Các lệnh backend hiện có:
 
@@ -165,16 +173,16 @@ Nếu bạn đã từng chạy Postgres Docker rồi sau đó đổi `POSTGRES_P
 
 ```powershell
 docker compose down -v
-docker compose up -d postgres redis
+docker compose up -d --wait postgres redis
 pnpm api:db:deploy
 ```
 
 ## Chạy Frontend Mobile Flutter
 
-Mobile hiện dùng Flutter tại `apps/mobile`. App dùng mock repositories mặc định
-(`USE_MOCK_DATA=true`), nên có thể chạy frontend mà không cần bật backend. Khi
-muốn gọi API thật, truyền `--dart-define=USE_MOCK_DATA=false` và
-`--dart-define=API_BASE_URL=...`.
+Mobile hiện dùng Flutter tại `apps/mobile`. App gọi API thật mặc định
+(`USE_MOCK_DATA=false`) với `API_BASE_URL=http://localhost:3000/api/v1`.
+Khi muốn chạy frontend mock không cần backend, truyền
+`--dart-define=USE_MOCK_DATA=true`.
 
 ### Chuẩn Bị Chung
 
@@ -208,55 +216,58 @@ Windows PowerShell:
 
 ```powershell
 cd apps/mobile
-flutter run
+flutter run --dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false
 ```
 
 macOS/Linux:
 
 ```bash
 cd apps/mobile
-flutter run
+flutter run --dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false
 ```
 
 Nếu có nhiều device, chỉ định device id từ `flutter devices`:
 
 ```powershell
-flutter run -d <device-id>
+flutter run -d <device-id> --dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false
 ```
 
 ### Chạy Với API Thật
 
-Bật backend trước:
+Bật database và backend trước:
 
 ```powershell
-docker compose up -d --build
+docker compose up -d --wait postgres redis
+pnpm api:start:dev
 ```
+
+Với OAuth trên Chrome, giữ web app ở `http://localhost:5000`. Không dùng `127.0.0.1:5000` cho Flutter web vì OAuth callback của API mặc định chuyển về `localhost:5000`; hai host này là hai browser origin khác nhau và có thể làm callback đăng nhập bị đứng ở màn hình trắng.
 
 Với Chrome, Windows desktop, macOS desktop, Linux desktop hoặc iOS simulator
 chạy cùng máy host:
 
 ```powershell
 cd apps/mobile
-flutter run -d chrome --dart-define=USE_MOCK_DATA=false --dart-define=USE_REAL_AUTH=true --dart-define=API_BASE_URL=http://localhost:3000/api/v1
+flutter run -d chrome --web-hostname localhost --web-port 5000
 ```
 
 Với Android emulator, dùng `10.0.2.2` để trỏ về host machine:
 
 ```powershell
 cd apps/mobile
-flutter run -d emulator-5554 --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
+flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 ```
 
 Với thiết bị Android/iOS thật, dùng IP LAN của máy chạy backend:
 
 ```powershell
-flutter run -d <device-id> --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://<LAN_IP>:3000/api/v1
+flutter run -d <device-id> --dart-define=API_BASE_URL=http://<LAN_IP>:3000/api/v1
 ```
 
 Ví dụ:
 
 ```powershell
-flutter run -d R58N0000000 --dart-define=USE_MOCK_DATA=false --dart-define=API_BASE_URL=http://192.168.1.20:3000/api/v1
+flutter run -d R58N0000000 --dart-define=API_BASE_URL=http://192.168.1.20:3000/api/v1
 ```
 
 Nếu `.env` đổi `API_HOST_PORT=3020`, thay `3000` bằng `3020`.
@@ -339,13 +350,13 @@ flutter run -d chrome
 Chạy Chrome với API thật:
 
 ```powershell
-flutter run -d chrome --dart-define=USE_MOCK_DATA=false --dart-define=USE_REAL_AUTH=true --dart-define=API_BASE_URL=http://localhost:3000/api/v1
+flutter run -d chrome --web-hostname localhost --web-port 5000
 ```
 
 Muốn cố định port web để debug:
 
 ```powershell
-flutter run -d chrome --web-hostname 127.0.0.1 --web-port 8080
+flutter run -d chrome --web-hostname localhost --web-port 5000
 ```
 
 ### Chạy Desktop Preview

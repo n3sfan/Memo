@@ -54,6 +54,9 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          useMockRepositoriesProvider.overrideWithValue(true),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -230,6 +233,8 @@ Future<void> _advanceToSignIn(WidgetTester tester) async {
 Widget _testApp({String? initialLocation}) {
   return ProviderScope(
     overrides: [
+      useMockRepositoriesProvider.overrideWithValue(true),
+      useRealAuthProvider.overrideWithValue(false),
       tokenStorageProvider.overrideWithValue(InMemoryTokenStorage()),
       oauthRedirectStreamProvider
           .overrideWith((ref) => const Stream<Uri>.empty()),

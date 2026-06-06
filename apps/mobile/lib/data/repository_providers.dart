@@ -17,11 +17,11 @@ import 'mock/mock_data.dart';
 import 'repositories/repositories.dart';
 
 final useMockRepositoriesProvider = Provider<bool>((ref) {
-  return const bool.fromEnvironment('USE_MOCK_DATA', defaultValue: true);
+  return const bool.fromEnvironment('USE_MOCK_DATA', defaultValue: false);
 });
 
 final useRealAuthProvider = Provider<bool>((ref) {
-  return const bool.fromEnvironment('USE_REAL_AUTH');
+  return const bool.fromEnvironment('USE_REAL_AUTH', defaultValue: true);
 });
 
 final apiConfigProvider = Provider<ApiConfig>((ref) {
