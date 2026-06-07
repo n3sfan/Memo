@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
 import 'auth/auth_controller.dart';
+import 'l10n/app_localizations.dart';
 
 void main() {
   runApp(const ProviderScope(child: MemoryMapApp()));
@@ -28,6 +29,7 @@ class MemoryMapApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: MemoTheme.lightTheme,
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

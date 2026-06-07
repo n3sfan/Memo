@@ -1,78 +1,133 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../data/models/models.dart';
-import '../data/repository_providers.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_extensions.dart';
+import '../media/audio_player.dart';
+import '../media/image_viewer.dart';
+import '../media/media_placeholder.dart';
+import '../media/media_url_controller.dart';
+import 'pin_detail_controller.dart';
 import 'theme.dart';
 
-class PinDetailScreen extends ConsumerStatefulWidget {
+/// Returns true when the pin's latitude/longitude are within valid ranges and
+/// are finite numbers (Req 5.5/5.6).
+bool _hasValidCoordinates(PinDto pin) {
+  final double lat = pin.lat;
+  final double lng = pin.lng;
+  if (lat.isNaN || lng.isNaN || lat.isInfinite || lng.isInfinite) {
+    return false;
+  }
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
+/// Controller-driven Pin Detail view.
+///
+/// Watches [pinDetailControllerProvider] and renders loading / error / data
+/// branches (Req 4.4). The loaded pin's text and coordinates stay visible
+/// regardless of media state (Req 10.1); media items load independently through
+/// [mediaUrlControllerProvider] and degrade to [MediaPlaceholder] when they
+/// cannot be loaded (Req 7.4, 10.2, 10.3).
+class PinDetailScreen extends ConsumerWidget {
   const PinDetailScreen({required this.pinId, super.key});
 
   final String pinId;
 
   @override
-  ConsumerState<PinDetailScreen> createState() => _PinDetailScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AsyncValue<PinDto> pinState =
+        ref.watch(pinDetailControllerProvider(pinId));
+
+    return pinState.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      // Localized error message on load failure (Req 4.4).
+      error: (Object error, StackTrace stackTrace) => Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              l10n.pinLoadError,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ),
+        ),
+      ),
+      data: (PinDto pin) => _PinDetailView(pin: pin, pinId: pinId),
+    );
+  }
 }
 
-class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
-  PinDto? _pin;
-  bool _isLoading = true;
-  String? _error;
+/// Renders the loaded [PinDto]. Content is derived only from the pin returned
+/// by the repository (Req 5.7).
+class _PinDetailView extends StatelessWidget {
+  const _PinDetailView({required this.pin, required this.pinId});
 
-  @override
-  void initState() {
-    super.initState();
-    _loadPin();
+  final PinDto pin;
+  final String pinId;
+
+  String _memoryDateLabel(BuildContext context) {
+    final DateTime? memoryDate = pin.memoryDate;
+    if (memoryDate == null) {
+      // Localized "date unknown" with English fallback (Req 5.4).
+      return context.dateUnknownLabel;
+    }
+    final String locale = Localizations.localeOf(context).toLanguageTag();
+    return DateFormat.yMMMd(locale).format(memoryDate.toLocal());
   }
 
-  Future<void> _loadPin() async {
-    try {
-      final pin = await ref.read(pinRepositoryProvider).getPin(widget.pinId);
-      if (!mounted) return;
-      setState(() {
-        _pin = pin;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Không thể tải kỷ niệm này.';
-        _isLoading = false;
-      });
+  /// Builds the map-route location for the "view on map" action (Req 6.1).
+  ///
+  /// When the pin has valid coordinates, the `lat`/`lng` query parameters are
+  /// included so the map route can focus on this memory. The parameter names
+  /// match those parsed by the router's `_coordinatesFromQuery` helper and used
+  /// by the map screen's pin-editor navigation. When the coordinates are
+  /// invalid, the bare map route (`/`) is used, which is acceptable per the
+  /// task spec.
+  String _viewOnMapLocation() {
+    if (!_hasValidCoordinates(pin)) {
+      return '/';
     }
+    final Uri location = Uri(
+      path: '/',
+      queryParameters: <String, String>{
+        'lat': pin.lat.toStringAsFixed(6),
+        'lng': pin.lng.toStringAsFixed(6),
+      },
+    );
+    return location.toString();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final List<PinMediaDto> imageMedia = pin.media
+        .where((PinMediaDto m) => m.mediaType == PinMediaType.image)
+        .toList(growable: false);
+    final List<PinMediaDto> audioMedia = pin.media
+        .where((PinMediaDto m) => m.mediaType == PinMediaType.audio)
+        .toList(growable: false);
 
-    if (_error != null || _pin == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: Center(child: Text(_error ?? 'Lỗi không xác định')),
-      );
-    }
-
-    final pin = _pin!;
+    final bool hasNote = pin.note != null && pin.note!.isNotEmpty;
+    final bool hasCoordinates = _hasValidCoordinates(pin);
 
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_horiz),
-          ),
-        ],
-      ),
+      appBar: AppBar(),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         child: FilledButton.icon(
-          onPressed: () => context.go('/'),
+          // "View on map" navigates to the map route with the pin's
+          // coordinates so the map can focus on this memory (Req 6.1). Uses
+          // `context.go` so the map becomes the active shell destination.
+          onPressed: () => context.go(_viewOnMapLocation()),
           icon: const Icon(Icons.map_outlined),
-          label: const Text('Xem trên bản đồ'),
+          label: Text(l10n.viewOnMap),
         ),
       ),
       body: SingleChildScrollView(
@@ -84,6 +139,7 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
               child: Icon(Icons.location_on, size: 48, color: MemoTheme.accent),
             ),
             const SizedBox(height: 16),
+            // Pin title (Req 5.1).
             Text(
               pin.title,
               textAlign: TextAlign.center,
@@ -93,6 +149,7 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
                   ),
             ),
             const SizedBox(height: 8),
+            // Memory-date label or "date unknown" (Req 5.3, 5.4).
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -103,59 +160,37 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  pin.memoryDate != null
-                      ? '${pin.memoryDate!.day} thg ${pin.memoryDate!.month}, ${pin.memoryDate!.year}'
-                      : 'Không rõ',
+                  _memoryDateLabel(context),
                   style: const TextStyle(color: Colors.black54, fontSize: 12),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.lock, size: 14, color: Colors.black54),
-                    SizedBox(width: 4),
-                    Text(
-                      'Chỉ mình tôi',
-                      style: TextStyle(fontSize: 12, color: Colors.black54),
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 32),
-            // Mock images
-            SizedBox(
-              height: 120,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+            // Image media: one selectable thumbnail per image item (Req 8.1),
+            // each backed by its own mediaUrlControllerProvider.
+            if (imageMedia.isNotEmpty) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  _buildImageMock('1', true),
-                  const SizedBox(width: 8),
-                  _buildImageMock('2', false),
-                  const SizedBox(width: 8),
-                  _buildImageMock('3', false, isLast: true),
+                  for (final PinMediaDto media in imageMedia)
+                    SizedBox(
+                      width: 150,
+                      child: _ImageThumbnail(media: media),
+                    ),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
-            if (pin.note != null && pin.note!.isNotEmpty) ...[
-              const Row(
+              const SizedBox(height: 24),
+            ],
+            // Note when non-empty (Req 5.2).
+            if (hasNote) ...[
+              Row(
                 children: [
-                  Icon(Icons.eco, size: 18, color: MemoTheme.primary),
-                  SizedBox(width: 8),
+                  const Icon(Icons.eco, size: 18, color: MemoTheme.primary),
+                  const SizedBox(width: 8),
                   Text(
-                    'Ghi chú',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    l10n.note,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -165,104 +200,67 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
               const Divider(),
               const SizedBox(height: 16),
             ],
+            // Coordinates when valid, else "coordinates unavailable"
+            // (Req 5.5, 5.6).
             Row(
               children: [
                 const Icon(Icons.location_on_outlined, size: 18),
                 const SizedBox(width: 8),
-                const Text(
-                  'Tọa độ',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Text(
+                  l10n.coordinates,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
-                Text(
-                  '${pin.lat.toStringAsFixed(4)}° N, ${pin.lng.toStringAsFixed(4)}° E',
-                  style: const TextStyle(color: Colors.black87),
+                Flexible(
+                  child: Text(
+                    hasCoordinates
+                        ? '${pin.lat.toStringAsFixed(4)}, '
+                            '${pin.lng.toStringAsFixed(4)}'
+                        : l10n.coordinatesUnavailable,
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(color: Colors.black87),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.copy, size: 16, color: Colors.black54),
               ],
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-            // Mock Audio
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: MemoTheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Ghi âm kỷ niệm',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '00:28',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 4),
-                        Icon(
-                          Icons.graphic_eq,
-                          color: Colors.black26,
-                        ), // Mock waveform
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // Audio media: an AudioPlayer per audio item (Req 9.1), each backed
+            // by its own mediaUrlControllerProvider.
+            if (audioMedia.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              for (final PinMediaDto media in audioMedia) ...[
+                AudioPlayer(
+                  mediaId: media.id,
+                  unavailableMessage: l10n.audioUnavailable,
+                  playLabel: l10n.play,
+                  pauseLabel: l10n.pause,
+                ),
+                const SizedBox(height: 12),
+              ],
+            ],
             const SizedBox(height: 32),
+            // Action entry points (refined in task 9.4).
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _ActionItem(
                   icon: Icons.edit_outlined,
-                  label: 'Sửa',
+                  label: l10n.edit,
                   onTap: () {
                     context.push(
-                      '/pins/${Uri.encodeComponent(widget.pinId)}/edit',
+                      '/pins/${Uri.encodeComponent(pinId)}/edit',
                     );
                   },
                 ),
                 _ActionItem(
                   icon: Icons.share_outlined,
-                  label: 'Chia sẻ',
+                  label: l10n.share,
                   onTap: () => _showShareSheet(context),
                 ),
                 _ActionItem(
                   icon: Icons.delete_outline,
-                  label: 'Xóa',
+                  label: l10n.delete,
                   color: MemoTheme.danger,
                   onTap: () => _showDeleteSheet(context),
                 ),
@@ -275,153 +273,27 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
     );
   }
 
-  Widget _buildImageMock(String id, bool isFirst, {bool isLast = false}) {
-    return GestureDetector(
-      onTap: () => _showImageViewer(context),
-      child: Container(
-        width: 120,
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(12),
-          image: const DecorationImage(
-            image: NetworkImage(
-              'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85?w=400',
-            ),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: isLast
-            ? Container(
-                decoration: BoxDecoration(
-                  color: Colors.black45,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: Text(
-                    '1/5',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              )
-            : null,
-      ),
-    );
-  }
-
-  void _showImageViewer(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      useSafeArea: false,
-      builder: (context) {
-        return Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            iconTheme: const IconThemeData(color: Colors.white),
-            actions: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.more_horiz, color: Colors.white),
-              ),
-            ],
-          ),
-          body: Stack(
-            children: [
-              Center(
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85',
-                ),
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.black87, Colors.transparent],
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Quán nhỏ Đà Lạt',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '12 thg 05, 2024 · 07:32',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _pin?.note ?? '',
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      const SizedBox(height: 16),
-                      // Mock thumbnails
-                      Row(
-                        children: [
-                          _buildThumbMock(true),
-                          const SizedBox(width: 8),
-                          _buildThumbMock(false),
-                          const SizedBox(width: 8),
-                          _buildThumbMock(false),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildThumbMock(bool selected) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        border: selected ? Border.all(color: Colors.white, width: 2) : null,
-        borderRadius: BorderRadius.circular(8),
-        image: const DecorationImage(
-          image: NetworkImage(
-            'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85?w=100',
-          ),
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
   void _showShareSheet(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (BuildContext context) {
+        // Share action entry point; full share flow is out of scope for this
+        // feature (refined in task 9.4).
         return Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Chia sẻ một khoảnh khắc',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                l10n.share,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               const Icon(
@@ -429,91 +301,10 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
                 size: 48,
                 color: MemoTheme.primary,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Chỉ kỷ niệm này (gồm ghi chú, ảnh, âm thanh\nvà vị trí) sẽ được chia sẻ qua liên kết.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.black54),
-              ),
               const SizedBox(height: 24),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.link, size: 16, color: Colors.black54),
-                    const SizedBox(width: 8),
-                    const Expanded(child: Text('memo.app/p/7k3a9m2d')),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        'Sao chép',
-                        style: TextStyle(color: MemoTheme.primary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.copy),
-                      label: const Text('Sao chép liên kết'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.ios_share),
-                      label: const Text('Chia sẻ'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  const Icon(Icons.public, color: MemoTheme.primary),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Đang chia sẻ',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Bất kỳ ai có liên kết đều có thể xem.',
-                          style: TextStyle(fontSize: 12, color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: true,
-                    onChanged: (v) {},
-                    activeThumbColor: MemoTheme.primary,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              TextButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.block, color: MemoTheme.danger),
-                label: const Text(
-                  'Thu hồi liên kết',
-                  style: TextStyle(color: MemoTheme.danger),
-                ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.share),
               ),
             ],
           ),
@@ -523,12 +314,15 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
   }
 
   void _showDeleteSheet(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (BuildContext context) {
+        // Delete action entry point; full delete flow is out of scope for this
+        // feature (refined in task 9.4).
         return Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -539,34 +333,126 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
                 size: 48,
                 color: MemoTheme.danger,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Xóa kỷ niệm này?',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Kỷ niệm cùng tất cả ảnh, ghi chú\nvà ghi âm sẽ bị xóa vĩnh viễn.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54),
-              ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Giữ lại'),
-              ),
-              const SizedBox(height: 8),
-              FilledButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.delete_outline),
-                label: const Text('Xóa'),
-                style:
-                    FilledButton.styleFrom(backgroundColor: MemoTheme.danger),
+                child: Text(l10n.delete),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// A selectable image thumbnail backed by [mediaUrlControllerProvider]
+/// (Req 8.1). Shows a small [Image.network] when the read URL is ready, a
+/// loading indicator while it resolves, and a [MediaPlaceholder] when the media
+/// is offline/pending/uncached/failed (Req 7.4, 10.2, 10.3). Tapping a ready
+/// thumbnail opens the full-screen [ImageViewer] for the media id (Req 8.2).
+class _ImageThumbnail extends ConsumerWidget {
+  const _ImageThumbnail({required this.media});
+
+  final PinMediaDto media;
+
+  void _openViewer(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (BuildContext context) => ImageViewer(
+          mediaId: media.id,
+          unavailableMessage: l10n.mediaUnavailable,
+          retryLabel: l10n.retry,
+          closeLabel: l10n.close,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AsyncValue<MediaLoadState> urlState =
+        ref.watch(mediaUrlControllerProvider(media.id));
+
+    return urlState.when(
+      loading: _buildLoading,
+      error: (_, __) => _buildPlaceholder(l10n),
+      data: (MediaLoadState loadState) {
+        if (loadState is! MediaReady) {
+          return _buildPlaceholder(l10n);
+        }
+        return _buildThumbnail(context, loadState.url, l10n);
+      },
+    );
+  }
+
+  Widget _buildLoading() {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(AppLocalizations l10n) {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: MediaPlaceholder(
+        message: l10n.mediaUnavailable,
+        icon: Icons.broken_image_outlined,
+      ),
+    );
+  }
+
+  Widget _buildThumbnail(
+    BuildContext context,
+    String url,
+    AppLocalizations l10n,
+  ) {
+    return GestureDetector(
+      key: ValueKey<String>('image-thumbnail-${media.id}'),
+      onTap: () => _openViewer(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            loadingBuilder: (
+              BuildContext context,
+              Widget child,
+              ImageChunkEvent? progress,
+            ) {
+              if (progress == null) {
+                return child;
+              }
+              return _buildLoading();
+            },
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stack) {
+              return MediaPlaceholder(
+                message: l10n.mediaUnavailable,
+                icon: Icons.broken_image_outlined,
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
@@ -586,22 +472,34 @@ class _ActionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: color,
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 72, minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: color),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: color,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

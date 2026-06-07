@@ -656,6 +656,14 @@ class _RecordingMediaRepository implements MediaRepository {
       createdAt: DateTime.utc(2026, 6, 2, 10, 16),
     );
   }
+
+  @override
+  Future<MediaReadUrlDto> createReadUrl(String mediaId) async {
+    return MediaReadUrlDto(
+      url: 'https://r2.example.test/read/$mediaId',
+      expiresAt: DateTime.utc(2026, 6, 2, 10, 15),
+    );
+  }
 }
 
 class _RecordingObjectUploadClient implements ObjectUploadClient {

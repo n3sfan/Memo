@@ -1,4 +1,103 @@
 {
   "@@locale": "vi",
-  "appTitle": "Bản Đồ Kỷ Niệm"
+  "appTitle": "Bản Đồ Kỷ Niệm",
+  "@appTitle": {
+    "description": "Application title shown in the app shell."
+  },
+  "navMap": "Bản đồ",
+  "@navMap": {
+    "description": "Bottom navigation label for the map."
+  },
+  "navTimeline": "Dòng thời gian",
+  "@navTimeline": {
+    "description": "Bottom navigation label for the timeline."
+  },
+  "navDuo": "Duo",
+  "@navDuo": {
+    "description": "Bottom navigation label for Duo."
+  },
+  "navSettings": "Cài đặt",
+  "@navSettings": {
+    "description": "Bottom navigation label for settings."
+  },
+  "timelineTitle": "Dòng thời gian",
+  "@timelineTitle": {
+    "description": "Title of the Timeline screen."
+  },
+  "sortNewest": "Mới nhất",
+  "@sortNewest": {
+    "description": "Sort order option that lists memories newest first."
+  },
+  "sortOldest": "Cũ nhất",
+  "@sortOldest": {
+    "description": "Sort order option that lists memories oldest first."
+  },
+  "timelineEmpty": "Chưa có kỷ niệm nào",
+  "@timelineEmpty": {
+    "description": "Empty-state message shown when the timeline has no pins."
+  },
+  "timelineError": "Không thể tải dòng thời gian của bạn",
+  "@timelineError": {
+    "description": "Error message shown when the timeline fails to load."
+  },
+  "retry": "Thử lại",
+  "@retry": {
+    "description": "Label for the retry control."
+  },
+  "dateUnknown": "Không rõ ngày",
+  "@dateUnknown": {
+    "description": "Label shown for a memory that has no recorded date."
+  },
+  "coordinatesUnavailable": "Không có tọa độ",
+  "@coordinatesUnavailable": {
+    "description": "Label shown when a pin has no valid coordinates."
+  },
+  "note": "Ghi chú",
+  "@note": {
+    "description": "Section label for a pin's note text."
+  },
+  "coordinates": "Tọa độ",
+  "@coordinates": {
+    "description": "Section label for a pin's coordinates."
+  },
+  "viewOnMap": "Xem trên bản đồ",
+  "@viewOnMap": {
+    "description": "Action label that opens the map focused on the pin."
+  },
+  "edit": "Chỉnh sửa",
+  "@edit": {
+    "description": "Action label that opens the pin editor."
+  },
+  "share": "Chia sẻ",
+  "@share": {
+    "description": "Action label that opens the share entry point."
+  },
+  "delete": "Xóa",
+  "@delete": {
+    "description": "Action label that opens the delete entry point."
+  },
+  "mediaUnavailable": "Không có phương tiện",
+  "@mediaUnavailable": {
+    "description": "Placeholder text shown when image media cannot be loaded."
+  },
+  "audioUnavailable": "Không có âm thanh",
+  "@audioUnavailable": {
+    "description": "Placeholder text shown when audio media cannot be loaded."
+  },
+  "pinLoadError": "Không thể tải kỷ niệm này",
+  "@pinLoadError": {
+    "description": "Error message shown when a pin fails to load."
+  },
+  "play": "Phát",
+  "@play": {
+    "description": "Accessible label for starting audio playback."
+  },
+  "pause": "Tạm dừng",
+  "@pause": {
+    "description": "Accessible label for pausing audio playback."
+  },
+  "close": "Đóng",
+  "@close": {
+    "description": "Accessible label for closing the media viewer."
+  }
 }

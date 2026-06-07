@@ -139,6 +139,38 @@ void main() {
     expect(find.text('new-pin-route 10.123456 106.654321'), findsOneWidget);
   });
 
+  testWidgets('map uses route focus coordinates as its initial camera', (
+    WidgetTester tester,
+  ) async {
+    const Coordinates focus = Coordinates(
+      lat: 10.762622,
+      lng: 106.660172,
+    );
+    MapViewConfig? capturedConfig;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          useMockRepositoriesProvider.overrideWithValue(true),
+        ],
+        child: MaterialApp(
+          home: MapScreen(
+            focusCoordinates: focus,
+            mapViewBuilder: (BuildContext context, MapViewConfig config) {
+              capturedConfig = config;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(capturedConfig, isNotNull);
+    expect(capturedConfig!.initialCamera.center.lat, focus.lat);
+    expect(capturedConfig!.initialCamera.center.lng, focus.lng);
+    expect(capturedConfig!.initialCamera.zoom, greaterThan(12));
+  });
+
   testWidgets('starts at login when no session exists',
       (WidgetTester tester) async {
     _setMobileViewport(tester);

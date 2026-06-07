@@ -34,4 +34,12 @@ class FakeMediaRepository implements MediaRepository {
       createdAt: DateTime.now().toUtc(),
     );
   }
+
+  @override
+  Future<MediaReadUrlDto> createReadUrl(String mediaId) async {
+    return MediaReadUrlDto(
+      url: 'https://storage.memo.local/read/$mediaId',
+      expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 15)),
+    );
+  }
 }

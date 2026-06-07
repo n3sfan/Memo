@@ -1,52 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../data/models/models.dart';
-import '../data/repository_providers.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_extensions.dart';
 import 'theme.dart';
+import 'timeline_controller.dart';
+import 'timeline_ordering.dart';
 
-class TimelineScreen extends ConsumerStatefulWidget {
+class TimelineScreen extends ConsumerWidget {
   const TimelineScreen({super.key});
 
-  @override
-  ConsumerState<TimelineScreen> createState() => _TimelineScreenState();
-}
+  static const int _bottomNavIndex = 1;
 
-class _TimelineScreenState extends ConsumerState<TimelineScreen> {
-  final int _bottomNavIndex = 1;
-  bool _isLoading = true;
-  List<PinDto> _items = [];
-  PinDto? _selectedItem;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTimeline();
-  }
-
-  Future<void> _loadTimeline() async {
-    try {
-      final map = await ref.read(mapRepositoryProvider).getDefaultMap();
-      final page = await ref
-          .read(timelineRepositoryProvider)
-          .listTimeline(mapId: map.id);
-      if (mounted) {
-        setState(() {
-          _items = page.items;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _onBottomNavTapped(int index) {
+  void _onBottomNavTapped(BuildContext context, int index) {
     switch (index) {
       case 0:
         context.go('/');
@@ -62,343 +31,309 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     }
   }
 
-  void _showItemPreview(PinDto pin) {
-    setState(() {
-      _selectedItem = pin;
-    });
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: MemoTheme.background,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85?w=200',
-                        ),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          pin.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.calendar_today,
-                              size: 14,
-                              color: Colors.black54,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              pin.memoryDate != null
-                                  ? '${pin.memoryDate!.day} thg ${pin.memoryDate!.month}, ${pin.memoryDate!.year}'
-                                  : 'Chưa rõ',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 14,
-                              color: Colors.black54,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              'TP. Đà Lạt, Lâm Đồng',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/pins/${Uri.encodeComponent(pin.id)}');
-                },
-                child: const Text('Chi tiết'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.map_outlined),
-                label: const Text('Xem trên bản đồ'),
-              ),
-            ],
-          ),
-        );
-      },
-    ).whenComplete(() {
-      if (mounted) {
-        setState(() {
-          _selectedItem = null;
-        });
-      }
-    });
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AsyncValue<TimelineState> timeline =
+        ref.watch(timelineControllerProvider);
+    final TimelineSortOrder activeOrder =
+        timeline.value?.order ?? TimelineSortOrder.newest;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Dòng thời gian',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.timelineTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.black12),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.lock_outline, size: 14),
-                SizedBox(width: 4),
-                Text(
-                  'Bản đồ cá nhân',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(width: 4),
-                Icon(Icons.arrow_drop_down, size: 16),
-              ],
-            ),
-          ),
-        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () {},
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 40),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.horizontal(left: Radius.circular(20)),
-                      ),
-                    ),
-                    child: const Text('Mới nhất'),
-                  ),
-                ),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 40),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.horizontal(right: Radius.circular(20)),
-                      ),
-                      side: const BorderSide(color: Colors.black12),
-                      backgroundColor: Colors.transparent,
-                    ),
-                    child: const Text(
-                      'Cũ nhất',
-                      style: TextStyle(color: Colors.black54),
-                    ),
-                  ),
-                ),
-              ],
+            child: _SortToggle(
+              activeOrder: activeOrder,
+              onChanged: (TimelineSortOrder order) =>
+                  ref.read(timelineControllerProvider.notifier).setOrder(order),
             ),
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.only(
-                top: 16,
-                bottom: 24,
-                left: 24,
-                right: 16,
-              ),
-              itemCount:
-                  _items.isEmpty ? 5 : _items.length, // use mock if empty
-              itemBuilder: (context, index) {
-                final isSelected =
-                    _items.isNotEmpty && _selectedItem?.id == _items[index].id;
-                return Stack(
-                  children: [
-                    Positioned(
-                      left: 4,
-                      top: 0,
-                      bottom: 0,
-                      child: Container(width: 2, color: Colors.black12),
+      body: timeline.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (Object error, StackTrace stackTrace) => _TimelineError(
+          onRetry: () => ref.invalidate(timelineControllerProvider),
+        ),
+        data: (TimelineState state) {
+          if (state.orderedPins.isEmpty) {
+            return const _TimelineEmpty();
+          }
+          return _TimelineList(pins: state.orderedPins);
+        },
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _bottomNavIndex,
+        onTap: (int index) => _onBottomNavTapped(context, index),
+        selectedItemColor: MemoTheme.primary,
+        unselectedItemColor: Colors.grey,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.map_outlined),
+            label: l10n.navMap,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.access_time),
+            label: l10n.navTimeline,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.people_outline),
+            label: l10n.navDuo,
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.settings_outlined),
+            label: l10n.navSettings,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Newest/oldest sort toggle bound to [TimelineController.setOrder] (Req 2.1).
+class _SortToggle extends StatelessWidget {
+  const _SortToggle({
+    required this.activeOrder,
+    required this.onChanged,
+  });
+
+  final TimelineSortOrder activeOrder;
+  final ValueChanged<TimelineSortOrder> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final bool newestSelected = activeOrder == TimelineSortOrder.newest;
+    return Row(
+      children: [
+        Expanded(
+          child: newestSelected
+              ? FilledButton(
+                  onPressed: () => onChanged(TimelineSortOrder.newest),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.horizontal(left: Radius.circular(20)),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: Row(
+                  ),
+                  child: Text(l10n.sortNewest),
+                )
+              : OutlinedButton(
+                  onPressed: () => onChanged(TimelineSortOrder.newest),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.horizontal(left: Radius.circular(20)),
+                    ),
+                    side: const BorderSide(color: Colors.black12),
+                    backgroundColor: Colors.transparent,
+                  ),
+                  child: Text(
+                    l10n.sortNewest,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                ),
+        ),
+        Expanded(
+          child: !newestSelected
+              ? FilledButton(
+                  onPressed: () => onChanged(TimelineSortOrder.oldest),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.horizontal(right: Radius.circular(20)),
+                    ),
+                  ),
+                  child: Text(l10n.sortOldest),
+                )
+              : OutlinedButton(
+                  onPressed: () => onChanged(TimelineSortOrder.oldest),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.horizontal(right: Radius.circular(20)),
+                    ),
+                    side: const BorderSide(color: Colors.black12),
+                    backgroundColor: Colors.transparent,
+                  ),
+                  child: Text(
+                    l10n.sortOldest,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Localized empty-state shown when zero pins are returned (Req 1.6).
+class _TimelineEmpty extends StatelessWidget {
+  const _TimelineEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          l10n.timelineEmpty,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 16, color: Colors.black54),
+        ),
+      ),
+    );
+  }
+}
+
+/// Localized error message with a retry control (Req 1.7).
+class _TimelineError extends StatelessWidget {
+  const _TimelineError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.timelineError,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onRetry,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 44),
+              ),
+              child: Text(l10n.retry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Renders one entry per pin (Req 1.3) with title (Req 1.5) and a localized
+/// memory-date label or "date unknown" (Req 1.4, 3.3, 10.4).
+class _TimelineList extends StatelessWidget {
+  const _TimelineList({required this.pins});
+
+  final List<PinDto> pins;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 16, bottom: 24, left: 24, right: 16),
+      itemCount: pins.length,
+      itemBuilder: (BuildContext context, int index) {
+        final PinDto pin = pins[index];
+        return _TimelineEntry(pin: pin);
+      },
+    );
+  }
+}
+
+class _TimelineEntry extends StatelessWidget {
+  const _TimelineEntry({required this.pin});
+
+  final PinDto pin;
+
+  String _memoryDateLabel(BuildContext context) {
+    final DateTime? memoryDate = pin.memoryDate;
+    if (memoryDate == null) {
+      // Localized "date unknown" with English fallback (Req 3.3).
+      return context.dateUnknownLabel;
+    }
+    final String locale = Localizations.localeOf(context).toLanguageTag();
+    return DateFormat.yMMMd(locale).format(memoryDate.toLocal());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned(
+          left: 4,
+          top: 0,
+          bottom: 0,
+          child: Container(width: 2, color: Colors.black12),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 24),
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: MemoTheme.accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () =>
+                        context.push('/pins/${Uri.encodeComponent(pin.id)}'),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 64),
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 24),
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: MemoTheme.accent,
-                              shape: BoxShape.circle,
+                          Text(
+                            _memoryDateLabel(context),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                if (_items.isNotEmpty) {
-                                  _showItemPreview(_items[index]);
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Colors.black.withValues(alpha: 0.05)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 64,
-                                      height: 64,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey[300],
-                                        borderRadius: BorderRadius.circular(12),
-                                        image: const DecorationImage(
-                                          image: NetworkImage(
-                                            'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85?w=100',
-                                          ),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Text(
-                                            '19:15',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.black54,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            _items.isNotEmpty
-                                                ? _items[index].title
-                                                : 'Quán nhỏ Đà Lạt',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          const Text(
-                                            'TP. Đà Lạt, Lâm Đồng',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.black54,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (isSelected)
-                                      const Icon(
-                                        Icons.check_circle,
-                                        color: MemoTheme.primary,
-                                        size: 20,
-                                      ),
-                                  ],
-                                ),
-                              ),
+                          const SizedBox(height: 2),
+                          Text(
+                            pin.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _bottomNavIndex,
-        onTap: _onBottomNavTapped,
-        selectedItemColor: MemoTheme.primary,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            label: 'Bản đồ',
+                  ),
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.access_time),
-            label: 'Dòng thời gian',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
-            label: 'Duo',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            label: 'Cài đặt',
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

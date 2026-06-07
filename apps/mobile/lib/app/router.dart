@@ -82,6 +82,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => MapScreen(
           startPicking: state.uri.queryParameters['pick'] == '1',
           editPinId: state.uri.queryParameters['editPinId'],
+          focusCoordinates: coordinatesFromQuery(state.uri),
         ),
       ),
       GoRoute(
@@ -108,7 +109,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/pins/new',
         builder: (context, state) {
           return PinEditorScreen(
-            initialCoordinates: _coordinatesFromQuery(state.uri),
+            initialCoordinates: coordinatesFromQuery(state.uri),
           );
         },
       ),
@@ -118,7 +119,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final String pinId = state.pathParameters['pinId'] ?? '';
           return PinEditorScreen(
             pinId: pinId,
-            initialCoordinates: _coordinatesFromQuery(state.uri),
+            initialCoordinates: coordinatesFromQuery(state.uri),
           );
         },
       ),
@@ -151,10 +152,17 @@ class BootstrapScreen extends StatelessWidget {
   }
 }
 
-Coordinates? _coordinatesFromQuery(Uri uri) {
+Coordinates? coordinatesFromQuery(Uri uri) {
   final double? lat = double.tryParse(uri.queryParameters['lat'] ?? '');
   final double? lng = double.tryParse(uri.queryParameters['lng'] ?? '');
-  if (lat == null || lng == null) {
+  if (lat == null ||
+      lng == null ||
+      !lat.isFinite ||
+      !lng.isFinite ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180) {
     return null;
   }
 

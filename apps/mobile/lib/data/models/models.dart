@@ -4,5 +4,6 @@ export 'coordinates.dart';
 export 'json.dart';
 export 'map_dto.dart';
 export 'media_dto.dart';
+export 'media_read_url_dto.dart';
 export 'pin_dto.dart';
 export 'timeline_dto.dart';

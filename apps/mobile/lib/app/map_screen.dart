@@ -11,12 +11,14 @@ class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({
     this.startPicking = false,
     this.editPinId,
+    this.focusCoordinates,
     this.mapViewBuilder = buildOpenStreetMapView,
     super.key,
   });
 
   final bool startPicking;
   final String? editPinId;
+  final Coordinates? focusCoordinates;
   final MapViewWidgetBuilder mapViewBuilder;
 
   @override
@@ -67,7 +69,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: widget.mapViewBuilder(
               context,
               MapViewConfig(
-                initialCamera: _initialCamera,
+                initialCamera: _initialCameraFor(widget.focusCoordinates),
                 markers: state.pins
                     .map(
                       (PinDto pin) => MapMarkerModel(
@@ -528,3 +530,14 @@ const MapCameraPosition _initialCamera = MapCameraPosition(
   center: Coordinates(lat: 11.35, lng: 107.58),
   zoom: 6.2,
 );
+
+MapCameraPosition _initialCameraFor(Coordinates? focusCoordinates) {
+  if (focusCoordinates == null) {
+    return _initialCamera;
+  }
+
+  return MapCameraPosition(
+    center: focusCoordinates,
+    zoom: 15,
+  );
+}

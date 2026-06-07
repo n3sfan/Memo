@@ -10,4 +10,76 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get appTitle => 'Bản Đồ Kỷ Niệm';
+
+  @override
+  String get navMap => 'Bản đồ';
+
+  @override
+  String get navTimeline => 'Dòng thời gian';
+
+  @override
+  String get navDuo => 'Duo';
+
+  @override
+  String get navSettings => 'Cài đặt';
+
+  @override
+  String get timelineTitle => 'Dòng thời gian';
+
+  @override
+  String get sortNewest => 'Mới nhất';
+
+  @override
+  String get sortOldest => 'Cũ nhất';
+
+  @override
+  String get timelineEmpty => 'Chưa có kỷ niệm nào';
+
+  @override
+  String get timelineError => 'Không thể tải dòng thời gian của bạn';
+
+  @override
+  String get retry => 'Thử lại';
+
+  @override
+  String get dateUnknown => 'Không rõ ngày';
+
+  @override
+  String get coordinatesUnavailable => 'Không có tọa độ';
+
+  @override
+  String get note => 'Ghi chú';
+
+  @override
+  String get coordinates => 'Tọa độ';
+
+  @override
+  String get viewOnMap => 'Xem trên bản đồ';
+
+  @override
+  String get edit => 'Chỉnh sửa';
+
+  @override
+  String get share => 'Chia sẻ';
+
+  @override
+  String get delete => 'Xóa';
+
+  @override
+  String get mediaUnavailable => 'Không có phương tiện';
+
+  @override
+  String get audioUnavailable => 'Không có âm thanh';
+
+  @override
+  String get pinLoadError => 'Không thể tải kỷ niệm này';
+
+  @override
+  String get play => 'Phát';
+
+  @override
+  String get pause => 'Tạm dừng';
+
+  @override
+  String get close => 'Đóng';
 }

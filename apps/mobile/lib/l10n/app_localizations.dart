@@ -98,11 +98,155 @@ abstract class AppLocalizations {
     Locale('vi')
   ];
 
-  /// No description provided for @appTitle.
+  /// Application title shown in the app shell.
   ///
   /// In vi, this message translates to:
   /// **'Bản Đồ Kỷ Niệm'**
   String get appTitle;
+
+  /// Bottom navigation label for the map.
+  ///
+  /// In vi, this message translates to:
+  /// **'Bản đồ'**
+  String get navMap;
+
+  /// Bottom navigation label for the timeline.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dòng thời gian'**
+  String get navTimeline;
+
+  /// Bottom navigation label for Duo.
+  ///
+  /// In vi, this message translates to:
+  /// **'Duo'**
+  String get navDuo;
+
+  /// Bottom navigation label for settings.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cài đặt'**
+  String get navSettings;
+
+  /// Title of the Timeline screen.
+  ///
+  /// In vi, this message translates to:
+  /// **'Dòng thời gian'**
+  String get timelineTitle;
+
+  /// Sort order option that lists memories newest first.
+  ///
+  /// In vi, this message translates to:
+  /// **'Mới nhất'**
+  String get sortNewest;
+
+  /// Sort order option that lists memories oldest first.
+  ///
+  /// In vi, this message translates to:
+  /// **'Cũ nhất'**
+  String get sortOldest;
+
+  /// Empty-state message shown when the timeline has no pins.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chưa có kỷ niệm nào'**
+  String get timelineEmpty;
+
+  /// Error message shown when the timeline fails to load.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể tải dòng thời gian của bạn'**
+  String get timelineError;
+
+  /// Label for the retry control.
+  ///
+  /// In vi, this message translates to:
+  /// **'Thử lại'**
+  String get retry;
+
+  /// Label shown for a memory that has no recorded date.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không rõ ngày'**
+  String get dateUnknown;
+
+  /// Label shown when a pin has no valid coordinates.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có tọa độ'**
+  String get coordinatesUnavailable;
+
+  /// Section label for a pin's note text.
+  ///
+  /// In vi, this message translates to:
+  /// **'Ghi chú'**
+  String get note;
+
+  /// Section label for a pin's coordinates.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tọa độ'**
+  String get coordinates;
+
+  /// Action label that opens the map focused on the pin.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xem trên bản đồ'**
+  String get viewOnMap;
+
+  /// Action label that opens the pin editor.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chỉnh sửa'**
+  String get edit;
+
+  /// Action label that opens the share entry point.
+  ///
+  /// In vi, this message translates to:
+  /// **'Chia sẻ'**
+  String get share;
+
+  /// Action label that opens the delete entry point.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xóa'**
+  String get delete;
+
+  /// Placeholder text shown when image media cannot be loaded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có phương tiện'**
+  String get mediaUnavailable;
+
+  /// Placeholder text shown when audio media cannot be loaded.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không có âm thanh'**
+  String get audioUnavailable;
+
+  /// Error message shown when a pin fails to load.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể tải kỷ niệm này'**
+  String get pinLoadError;
+
+  /// Accessible label for starting audio playback.
+  ///
+  /// In vi, this message translates to:
+  /// **'Phát'**
+  String get play;
+
+  /// Accessible label for pausing audio playback.
+  ///
+  /// In vi, this message translates to:
+  /// **'Tạm dừng'**
+  String get pause;
+
+  /// Accessible label for closing the media viewer.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đóng'**
+  String get close;
 }
 
 class _AppLocalizationsDelegate

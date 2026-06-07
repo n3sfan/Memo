@@ -69,6 +69,48 @@ The object upload client uses a separate Dio client and must not use the API
 auth interceptor, because presigned URLs are already authorized by the backend.
 The backend stores only the registered metadata and object key.
 
+## Timeline, Pin Detail And Media Reads
+
+Timeline and Pin Detail UI must continue to use repository providers:
+
+```dart
+final page = await ref.read(timelineRepositoryProvider).listTimeline(
+  mapId: mapId,
+  order: 'desc',
+);
+
+final pin = await ref.read(pinRepositoryProvider).getPin(pinId);
+```
+
+Media viewers obtain a short-lived Authorized Read URL from the backend through
+`MediaRepository`. UI code must not construct object-storage URLs or import
+`ApiClient`/Dio:
+
+```dart
+final readUrl = await ref
+    .read(mediaRepositoryProvider)
+    .createReadUrl(mediaId);
+```
+
+The read URL is ephemeral and scoped to the authorized media item. Mobile may
+keep it in per-item Riverpod state while the viewer is alive, but should request
+a fresh URL after retry, provider disposal or connectivity recovery instead of
+persisting it in the local database.
+
+Images may load the Authorized Read URL with `Image.network`. Audio playback
+must go through the project-owned `AudioPlaybackPort`; the concrete
+`just_audio` dependency belongs only in the adapter. Each media id owns an
+independent playback port and Riverpod disposes it with the corresponding
+widget/provider lifecycle.
+
+When media cannot be resolved, Pin Detail keeps title, note, memory date and
+coordinates visible and renders a localized placeholder for that media item.
+Connectivity recovery causes the media URL provider to resolve again.
+
+Pin Detail opens a map location with `/?lat=<latitude>&lng=<longitude>`. The
+router validates both coordinate ranges before passing them to `MapScreen` as
+its initial focus camera.
+
 The default provider mode is the real API. Feature owners can still build Map
 View, Pin Editor and Timeline without backend dependencies by running with
 `--dart-define=USE_MOCK_DATA=true --dart-define=USE_REAL_AUTH=false`.
