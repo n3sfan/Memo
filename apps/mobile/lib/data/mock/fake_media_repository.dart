@@ -38,8 +38,30 @@ class FakeMediaRepository implements MediaRepository {
   @override
   Future<MediaReadUrlDto> createReadUrl(String mediaId) async {
     return MediaReadUrlDto(
-      url: 'https://storage.memo.local/read/$mediaId',
+      url: _readUrlFor(mediaId),
       expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 15)),
     );
+  }
+
+  String _readUrlFor(String mediaId) {
+    final PinMediaDto? media = _findMedia(mediaId);
+
+    return switch (media?.mediaType) {
+      PinMediaType.image => 'https://picsum.photos/seed/memo-$mediaId/1200/900',
+      PinMediaType.audio =>
+        'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      PinMediaType.text || null => 'https://storage.memo.local/read/$mediaId',
+    };
+  }
+
+  PinMediaDto? _findMedia(String mediaId) {
+    for (final PinDto pin in state.pins) {
+      for (final PinMediaDto media in pin.media) {
+        if (media.id == mediaId) {
+          return media;
+        }
+      }
+    }
+    return null;
   }
 }

@@ -48,6 +48,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coordinatesUnavailable => 'Coordinates unavailable';
 
   @override
+  String get location => 'Location';
+
+  @override
+  String get savedMapLocation => 'Saved on map';
+
+  @override
   String get note => 'Note';
 
   @override
@@ -64,6 +70,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get delete => 'Delete';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get copiedToClipboard => 'Copied to clipboard';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get deletePinTitle => 'Delete this memory?';
+
+  @override
+  String get deletePinMessage => 'This removes the pin from your map.';
+
+  @override
+  String get deleteFailed => 'Could not delete this memory';
 
   @override
   String get mediaUnavailable => 'Media unavailable';

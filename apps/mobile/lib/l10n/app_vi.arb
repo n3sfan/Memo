@@ -52,6 +52,14 @@
   "@coordinatesUnavailable": {
     "description": "Label shown when a pin has no valid coordinates."
   },
+  "location": "Vị trí",
+  "@location": {
+    "description": "Section label for a pin's saved map location."
+  },
+  "savedMapLocation": "Đã lưu trên bản đồ",
+  "@savedMapLocation": {
+    "description": "Short text shown when a pin has a usable saved map location."
+  },
   "note": "Ghi chú",
   "@note": {
     "description": "Section label for a pin's note text."
@@ -75,6 +83,30 @@
   "delete": "Xóa",
   "@delete": {
     "description": "Action label that opens the delete entry point."
+  },
+  "copy": "Sao chép",
+  "@copy": {
+    "description": "Action label that copies share text to the clipboard."
+  },
+  "copiedToClipboard": "Đã sao chép",
+  "@copiedToClipboard": {
+    "description": "Snackbar text shown after copying share text."
+  },
+  "cancel": "Hủy",
+  "@cancel": {
+    "description": "Cancel button label."
+  },
+  "deletePinTitle": "Xóa kỷ niệm này?",
+  "@deletePinTitle": {
+    "description": "Title shown in the delete confirmation sheet."
+  },
+  "deletePinMessage": "Kỷ niệm này sẽ bị xóa khỏi bản đồ của bạn.",
+  "@deletePinMessage": {
+    "description": "Body text shown in the delete confirmation sheet."
+  },
+  "deleteFailed": "Không thể xóa kỷ niệm này",
+  "@deleteFailed": {
+    "description": "Snackbar text shown when deleting a pin fails."
   },
   "mediaUnavailable": "Không có phương tiện",
   "@mediaUnavailable": {

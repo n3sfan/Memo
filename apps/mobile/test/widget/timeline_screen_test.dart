@@ -110,6 +110,14 @@ void main() {
 
     final List<String> newestOrder = titlesInOrder();
     expect(
+      tester
+          .widget<SegmentedButton<TimelineSortOrder>>(
+            find.byType(SegmentedButton<TimelineSortOrder>),
+          )
+          .selected,
+      <TimelineSortOrder>{TimelineSortOrder.newest},
+    );
+    expect(
       newestOrder,
       orderPins(samplePins, TimelineSortOrder.newest)
           .map((PinDto pin) => pin.title)
@@ -121,6 +129,14 @@ void main() {
     await tester.pumpAndSettle();
 
     final List<String> oldestOrder = titlesInOrder();
+    expect(
+      tester
+          .widget<SegmentedButton<TimelineSortOrder>>(
+            find.byType(SegmentedButton<TimelineSortOrder>),
+          )
+          .selected,
+      <TimelineSortOrder>{TimelineSortOrder.oldest},
+    );
 
     // Order changed but the same set of pins is still present (none removed).
     expect(oldestOrder, isNot(equals(newestOrder)));

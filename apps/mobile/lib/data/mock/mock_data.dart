@@ -31,6 +31,39 @@ final MapDto mockPersonalMap = MapDto(
   ],
 );
 
+final List<PinMediaDto> mockDaLatMedia = <PinMediaDto>[
+  PinMediaDto(
+    id: 'media_da_lat_photo',
+    pinId: 'pin_da_lat_1',
+    mediaType: PinMediaType.image,
+    objectKey: 'mock/pin_da_lat_1/photo.jpg',
+    mimeType: 'image/jpeg',
+    sizeBytes: 245000,
+    createdAt: DateTime.utc(2026, 5, 20, 8, 5),
+  ),
+  PinMediaDto(
+    id: 'media_da_lat_audio',
+    pinId: 'pin_da_lat_1',
+    mediaType: PinMediaType.audio,
+    objectKey: 'mock/pin_da_lat_1/audio.mp3',
+    mimeType: 'audio/mpeg',
+    sizeBytes: 580000,
+    createdAt: DateTime.utc(2026, 5, 20, 8, 10),
+  ),
+];
+
+final List<PinMediaDto> mockSaiGonMedia = <PinMediaDto>[
+  PinMediaDto(
+    id: 'media_sai_gon_photo',
+    pinId: 'pin_sai_gon_1',
+    mediaType: PinMediaType.image,
+    objectKey: 'mock/pin_sai_gon_1/photo.jpg',
+    mimeType: 'image/jpeg',
+    sizeBytes: 238000,
+    createdAt: DateTime.utc(2026, 5, 24, 18, 5),
+  ),
+];
+
 final List<PinDto> mockPins = <PinDto>[
   PinDto(
     id: 'pin_da_lat_1',
@@ -40,7 +73,7 @@ final List<PinDto> mockPins = <PinDto>[
     memoryDate: DateTime.utc(2026, 5, 20),
     lat: 11.9404,
     lng: 108.4583,
-    media: const <PinMediaDto>[],
+    media: mockDaLatMedia,
     createdAt: DateTime.utc(2026, 5, 20, 8),
     updatedAt: DateTime.utc(2026, 5, 20, 8),
   ),
@@ -52,7 +85,7 @@ final List<PinDto> mockPins = <PinDto>[
     memoryDate: DateTime.utc(2026, 5, 24),
     lat: 10.7769,
     lng: 106.7009,
-    media: const <PinMediaDto>[],
+    media: mockSaiGonMedia,
     createdAt: DateTime.utc(2026, 5, 24, 18),
     updatedAt: DateTime.utc(2026, 5, 24, 18),
   ),

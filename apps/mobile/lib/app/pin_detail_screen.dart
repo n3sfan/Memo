@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../data/models/models.dart';
+import '../data/repository_providers.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extensions.dart';
 import '../media/audio_player.dart';
@@ -66,7 +68,7 @@ class PinDetailScreen extends ConsumerWidget {
 
 /// Renders the loaded [PinDto]. Content is derived only from the pin returned
 /// by the repository (Req 5.7).
-class _PinDetailView extends StatelessWidget {
+class _PinDetailView extends ConsumerWidget {
   const _PinDetailView({required this.pin, required this.pinId});
 
   final PinDto pin;
@@ -105,7 +107,7 @@ class _PinDetailView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final List<PinMediaDto> imageMedia = pin.media
         .where((PinMediaDto m) => m.mediaType == PinMediaType.image)
@@ -200,28 +202,9 @@ class _PinDetailView extends StatelessWidget {
               const Divider(),
               const SizedBox(height: 16),
             ],
-            // Coordinates when valid, else "coordinates unavailable"
-            // (Req 5.5, 5.6).
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.coordinates,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                Flexible(
-                  child: Text(
-                    hasCoordinates
-                        ? '${pin.lat.toStringAsFixed(4)}, '
-                            '${pin.lng.toStringAsFixed(4)}'
-                        : l10n.coordinatesUnavailable,
-                    textAlign: TextAlign.end,
-                    style: const TextStyle(color: Colors.black87),
-                  ),
-                ),
-              ],
+            _LocationCard(
+              hasCoordinates: hasCoordinates,
+              coordinatesText: _coordinatesText(),
             ),
             // Audio media: an AudioPlayer per audio item (Req 9.1), each backed
             // by its own mediaUrlControllerProvider.
@@ -262,7 +245,7 @@ class _PinDetailView extends StatelessWidget {
                   icon: Icons.delete_outline,
                   label: l10n.delete,
                   color: MemoTheme.danger,
-                  onTap: () => _showDeleteSheet(context),
+                  onTap: () => _showDeleteSheet(context, ref),
                 ),
               ],
             ),
@@ -273,20 +256,42 @@ class _PinDetailView extends StatelessWidget {
     );
   }
 
+  String _coordinatesText() {
+    return '${pin.lat.toStringAsFixed(4)}, ${pin.lng.toStringAsFixed(4)}';
+  }
+
+  String _shareText(BuildContext context) {
+    final StringBuffer buffer = StringBuffer(pin.title);
+    if (pin.note != null && pin.note!.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..write(pin.note);
+    }
+    buffer
+      ..writeln()
+      ..write(_memoryDateLabel(context));
+    if (_hasValidCoordinates(pin)) {
+      buffer
+        ..writeln()
+        ..write(_coordinatesText());
+    }
+    return buffer.toString();
+  }
+
   void _showShareSheet(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String shareText = _shareText(context);
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (BuildContext context) {
-        // Share action entry point; full share flow is out of scope for this
-        // feature (refined in task 9.4).
         return Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 l10n.share,
@@ -296,15 +301,24 @@ class _PinDetailView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Icon(
-                Icons.send_outlined,
-                size: 48,
-                color: MemoTheme.primary,
+              SelectableText(
+                shareText,
+                style: const TextStyle(height: 1.4),
               ),
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.share),
+              FilledButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: shareText));
+                  if (!context.mounted) {
+                    return;
+                  }
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.copiedToClipboard)),
+                  );
+                },
+                icon: const Icon(Icons.copy),
+                label: Text(l10n.copy),
               ),
             ],
           ),
@@ -313,7 +327,7 @@ class _PinDetailView extends StatelessWidget {
     );
   }
 
-  void _showDeleteSheet(BuildContext context) {
+  void _showDeleteSheet(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
@@ -321,27 +335,123 @@ class _PinDetailView extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (BuildContext context) {
-        // Delete action entry point; full delete flow is out of scope for this
-        // feature (refined in task 9.4).
         return Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Icon(
                 Icons.warning_amber_rounded,
                 size: 48,
                 color: MemoTheme.danger,
               ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.deletePinTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.deletePinMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54),
+              ),
               const SizedBox(height: 24),
               OutlinedButton(
                 onPressed: () => Navigator.pop(context),
+                child: Text(l10n.cancel),
+              ),
+              const SizedBox(height: 8),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: MemoTheme.danger,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  try {
+                    await ref.read(pinRepositoryProvider).deletePin(pinId);
+                    if (!context.mounted) {
+                      return;
+                    }
+                    context.go('/timeline');
+                  } catch (_) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.deleteFailed)),
+                    );
+                  }
+                },
                 child: Text(l10n.delete),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _LocationCard extends StatelessWidget {
+  const _LocationCard({
+    required this.hasCoordinates,
+    required this.coordinatesText,
+  });
+
+  final bool hasCoordinates;
+  final String coordinatesText;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.location_on_outlined, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.location,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  hasCoordinates
+                      ? l10n.savedMapLocation
+                      : l10n.coordinatesUnavailable,
+                  style: const TextStyle(color: Colors.black87),
+                ),
+                if (hasCoordinates) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${l10n.coordinates}: $coordinatesText',
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

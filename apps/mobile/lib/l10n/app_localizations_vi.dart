@@ -48,6 +48,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get coordinatesUnavailable => 'Không có tọa độ';
 
   @override
+  String get location => 'Vị trí';
+
+  @override
+  String get savedMapLocation => 'Đã lưu trên bản đồ';
+
+  @override
   String get note => 'Ghi chú';
 
   @override
@@ -64,6 +70,24 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get delete => 'Xóa';
+
+  @override
+  String get copy => 'Sao chép';
+
+  @override
+  String get copiedToClipboard => 'Đã sao chép';
+
+  @override
+  String get cancel => 'Hủy';
+
+  @override
+  String get deletePinTitle => 'Xóa kỷ niệm này?';
+
+  @override
+  String get deletePinMessage => 'Kỷ niệm này sẽ bị xóa khỏi bản đồ của bạn.';
+
+  @override
+  String get deleteFailed => 'Không thể xóa kỷ niệm này';
 
   @override
   String get mediaUnavailable => 'Không có phương tiện';

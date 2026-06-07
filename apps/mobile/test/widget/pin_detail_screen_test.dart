@@ -91,10 +91,12 @@ void main() {
       // ...but the pin's text content stays visible (Req 10.1).
       expect(find.text(pin.title), findsOneWidget);
       expect(find.text(pin.note!), findsOneWidget);
-      // Coordinates are shown formatted to 4 decimals.
+      // Location is shown as a useful map-location section, with raw
+      // coordinates kept as secondary detail.
       final String coordinateText =
           '${pin.lat.toStringAsFixed(4)}, ${pin.lng.toStringAsFixed(4)}';
-      expect(find.text(coordinateText), findsOneWidget);
+      expect(find.text(l10n.savedMapLocation), findsOneWidget);
+      expect(find.textContaining(coordinateText), findsOneWidget);
       // Not the "coordinates unavailable" fallback.
       expect(find.text(l10n.coordinatesUnavailable), findsNothing);
     },
@@ -192,6 +194,47 @@ void main() {
     expect(find.text('edit:${pin.id}'), findsOneWidget);
   });
 
+  testWidgets('share sheet exposes copyable memory text',
+      (WidgetTester tester) async {
+    final PinDto pin = buildPin(memoryDate: DateTime.utc(2026, 5, 20));
+
+    await _pumpPinDetailRouter(
+      tester,
+      pin: pin,
+      mediaRepository: _FailingMediaRepository(),
+    );
+
+    await tester.tap(find.text(l10n.share));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SelectableText), findsOneWidget);
+    expect(find.textContaining(pin.title), findsWidgets);
+    expect(find.widgetWithText(FilledButton, l10n.copy), findsOneWidget);
+  });
+
+  testWidgets('delete confirms through repository and returns to timeline',
+      (WidgetTester tester) async {
+    final PinDto pin = buildPin(memoryDate: DateTime.utc(2026, 5, 20));
+    final _FakePinRepository pinRepository = _FakePinRepository(pin);
+
+    await _pumpPinDetailRouter(
+      tester,
+      pin: pin,
+      pinRepository: pinRepository,
+      mediaRepository: _FailingMediaRepository(),
+    );
+
+    await tester.tap(find.text(l10n.delete));
+    await tester.pumpAndSettle();
+    expect(find.text(l10n.deletePinTitle), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, l10n.delete));
+    await tester.pumpAndSettle();
+
+    expect(pinRepository.deletedPinIds, <String>[pin.id]);
+    expect(find.text('timeline'), findsOneWidget);
+  });
+
   testWidgets('image thumbnail opens and dismisses the image viewer',
       (WidgetTester tester) async {
     final PinDto pin = buildPin(
@@ -269,6 +312,7 @@ Future<void> _pumpPinDetailRouter(
   WidgetTester tester, {
   required PinDto pin,
   required MediaRepository mediaRepository,
+  PinRepository? pinRepository,
 }) async {
   tester.view.physicalSize = const Size(1080, 1920);
   tester.view.devicePixelRatio = 1;
@@ -289,6 +333,12 @@ Future<void> _pumpPinDetailRouter(
               '${state.uri.queryParameters['lng']}',
             ),
           );
+        },
+      ),
+      GoRoute(
+        path: '/timeline',
+        builder: (BuildContext context, GoRouterState state) {
+          return const Scaffold(body: Text('timeline'));
         },
       ),
       GoRoute(
@@ -313,7 +363,9 @@ Future<void> _pumpPinDetailRouter(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        pinRepositoryProvider.overrideWithValue(_FakePinRepository(pin)),
+        pinRepositoryProvider.overrideWithValue(
+          pinRepository ?? _FakePinRepository(pin),
+        ),
         mediaRepositoryProvider.overrideWithValue(mediaRepository),
         networkMonitorProvider
             .overrideWithValue(_FakeNetworkMonitor(NetworkStatus.online)),
@@ -340,6 +392,7 @@ class _FakePinRepository implements PinRepository {
   _FakePinRepository(this.pin);
 
   final PinDto pin;
+  final List<String> deletedPinIds = <String>[];
 
   @override
   Future<PinDto> getPin(String pinId) async => pin;
@@ -366,7 +419,9 @@ class _FakePinRepository implements PinRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> deletePin(String pinId) => throw UnimplementedError();
+  Future<void> deletePin(String pinId) async {
+    deletedPinIds.add(pinId);
+  }
 }
 
 /// A [MediaRepository] whose `createReadUrl` always throws, forcing the

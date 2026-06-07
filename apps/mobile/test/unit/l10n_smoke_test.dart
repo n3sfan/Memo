@@ -26,12 +26,20 @@ void main() {
     'retry': (l) => l.retry,
     'dateUnknown': (l) => l.dateUnknown,
     'coordinatesUnavailable': (l) => l.coordinatesUnavailable,
+    'location': (l) => l.location,
+    'savedMapLocation': (l) => l.savedMapLocation,
     'note': (l) => l.note,
     'coordinates': (l) => l.coordinates,
     'viewOnMap': (l) => l.viewOnMap,
     'edit': (l) => l.edit,
     'share': (l) => l.share,
     'delete': (l) => l.delete,
+    'copy': (l) => l.copy,
+    'copiedToClipboard': (l) => l.copiedToClipboard,
+    'cancel': (l) => l.cancel,
+    'deletePinTitle': (l) => l.deletePinTitle,
+    'deletePinMessage': (l) => l.deletePinMessage,
+    'deleteFailed': (l) => l.deleteFailed,
     'mediaUnavailable': (l) => l.mediaUnavailable,
     'audioUnavailable': (l) => l.audioUnavailable,
     'pinLoadError': (l) => l.pinLoadError,
@@ -45,8 +53,8 @@ void main() {
     'vi': AppLocalizationsVi(),
   };
 
-  test('all 24 new keys are covered by the smoke test', () {
-    expect(newKeys.length, 24);
+  test('all 32 new keys are covered by the smoke test', () {
+    expect(newKeys.length, 32);
   });
 
   for (final localeEntry in locales.entries) {

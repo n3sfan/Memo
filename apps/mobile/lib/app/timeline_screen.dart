@@ -113,70 +113,30 @@ class _SortToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
-    final bool newestSelected = activeOrder == TimelineSortOrder.newest;
-    return Row(
-      children: [
-        Expanded(
-          child: newestSelected
-              ? FilledButton(
-                  onPressed: () => onChanged(TimelineSortOrder.newest),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.horizontal(left: Radius.circular(20)),
-                    ),
-                  ),
-                  child: Text(l10n.sortNewest),
-                )
-              : OutlinedButton(
-                  onPressed: () => onChanged(TimelineSortOrder.newest),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.horizontal(left: Radius.circular(20)),
-                    ),
-                    side: const BorderSide(color: Colors.black12),
-                    backgroundColor: Colors.transparent,
-                  ),
-                  child: Text(
-                    l10n.sortNewest,
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                ),
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<TimelineSortOrder>(
+        showSelectedIcon: false,
+        selected: <TimelineSortOrder>{activeOrder},
+        onSelectionChanged: (Set<TimelineSortOrder> selected) {
+          onChanged(selected.single);
+        },
+        segments: <ButtonSegment<TimelineSortOrder>>[
+          ButtonSegment<TimelineSortOrder>(
+            value: TimelineSortOrder.newest,
+            label: Text(l10n.sortNewest),
+            icon: const Icon(Icons.south),
+          ),
+          ButtonSegment<TimelineSortOrder>(
+            value: TimelineSortOrder.oldest,
+            label: Text(l10n.sortOldest),
+            icon: const Icon(Icons.north),
+          ),
+        ],
+        style: ButtonStyle(
+          minimumSize: WidgetStateProperty.all(const Size(0, 44)),
         ),
-        Expanded(
-          child: !newestSelected
-              ? FilledButton(
-                  onPressed: () => onChanged(TimelineSortOrder.oldest),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.horizontal(right: Radius.circular(20)),
-                    ),
-                  ),
-                  child: Text(l10n.sortOldest),
-                )
-              : OutlinedButton(
-                  onPressed: () => onChanged(TimelineSortOrder.oldest),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(0, 40),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.horizontal(right: Radius.circular(20)),
-                    ),
-                    side: const BorderSide(color: Colors.black12),
-                    backgroundColor: Colors.transparent,
-                  ),
-                  child: Text(
-                    l10n.sortOldest,
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                ),
-        ),
-      ],
+      ),
     );
   }
 }

@@ -77,9 +77,11 @@ void main() {
 
       final MediaRepository repository =
           container.read(mediaRepositoryProvider);
-      final MediaReadUrlDto readUrl = await repository.createReadUrl('media_1');
+      final MediaReadUrlDto readUrl =
+          await repository.createReadUrl('media_da_lat_photo');
 
       expect(readUrl.url, isNotEmpty);
+      expect(readUrl.url, contains('https://picsum.photos/seed/'));
     });
 
     test('the default real wiring uses the API repositories (control case)',

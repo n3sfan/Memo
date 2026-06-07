@@ -176,6 +176,18 @@ abstract class AppLocalizations {
   /// **'Không có tọa độ'**
   String get coordinatesUnavailable;
 
+  /// Section label for a pin's saved map location.
+  ///
+  /// In vi, this message translates to:
+  /// **'Vị trí'**
+  String get location;
+
+  /// Short text shown when a pin has a usable saved map location.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã lưu trên bản đồ'**
+  String get savedMapLocation;
+
   /// Section label for a pin's note text.
   ///
   /// In vi, this message translates to:
@@ -211,6 +223,42 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Xóa'**
   String get delete;
+
+  /// Action label that copies share text to the clipboard.
+  ///
+  /// In vi, this message translates to:
+  /// **'Sao chép'**
+  String get copy;
+
+  /// Snackbar text shown after copying share text.
+  ///
+  /// In vi, this message translates to:
+  /// **'Đã sao chép'**
+  String get copiedToClipboard;
+
+  /// Cancel button label.
+  ///
+  /// In vi, this message translates to:
+  /// **'Hủy'**
+  String get cancel;
+
+  /// Title shown in the delete confirmation sheet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Xóa kỷ niệm này?'**
+  String get deletePinTitle;
+
+  /// Body text shown in the delete confirmation sheet.
+  ///
+  /// In vi, this message translates to:
+  /// **'Kỷ niệm này sẽ bị xóa khỏi bản đồ của bạn.'**
+  String get deletePinMessage;
+
+  /// Snackbar text shown when deleting a pin fails.
+  ///
+  /// In vi, this message translates to:
+  /// **'Không thể xóa kỷ niệm này'**
+  String get deleteFailed;
 
   /// Placeholder text shown when image media cannot be loaded.
   ///

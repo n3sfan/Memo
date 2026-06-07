@@ -29,13 +29,25 @@ void main() {
   });
 
   group('FakeMediaRepository.createReadUrl', () {
-    test('returns deterministic url for a given mediaId', () async {
+    test('returns a loadable image URL for seeded image media', () async {
       final FakeMediaRepository repository =
           FakeMediaRepository(MockBackendState.seeded());
 
-      final MediaReadUrlDto result = await repository.createReadUrl('media_99');
+      final MediaReadUrlDto result =
+          await repository.createReadUrl('media_da_lat_photo');
 
-      expect(result.url, 'https://storage.memo.local/read/media_99');
+      expect(result.url, contains('https://picsum.photos/seed/'));
+      expect(result.url, contains('media_da_lat_photo'));
+    });
+
+    test('returns a loadable audio URL for seeded audio media', () async {
+      final FakeMediaRepository repository =
+          FakeMediaRepository(MockBackendState.seeded());
+
+      final MediaReadUrlDto result =
+          await repository.createReadUrl('media_da_lat_audio');
+
+      expect(result.url, startsWith('https://www.soundhelix.com/'));
     });
 
     test('returns an expiry in the future', () async {
@@ -43,7 +55,8 @@ void main() {
           FakeMediaRepository(MockBackendState.seeded());
       final DateTime before = DateTime.now().toUtc();
 
-      final MediaReadUrlDto result = await repository.createReadUrl('media_1');
+      final MediaReadUrlDto result =
+          await repository.createReadUrl('media_da_lat_photo');
 
       expect(result.expiresAt.isAfter(before), isTrue);
     });
