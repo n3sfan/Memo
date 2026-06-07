@@ -94,6 +94,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DuoScreen(),
       ),
       GoRoute(
+        path: '/inv/:code',
+        builder: (context, state) {
+          final String code = state.pathParameters['code'] ?? '';
+
+          return DuoScreen(initialInvitationCode: code);
+        },
+      ),
+      GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),

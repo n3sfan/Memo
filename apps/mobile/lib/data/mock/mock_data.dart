@@ -21,6 +21,14 @@ final MapDto mockPersonalMap = MapDto(
   type: MemoryMapType.personal,
   ownerId: mockUserId,
   name: 'Personal Map',
+  members: <MapMemberDto>[
+    MapMemberDto(
+      mapId: mockPersonalMapId,
+      userId: mockUserId,
+      role: MapMemberRole.owner,
+      joinedAt: DateTime.utc(2026, 5, 20),
+    ),
+  ],
 );
 
 final List<PinDto> mockPins = <PinDto>[
@@ -65,6 +73,12 @@ class MockBackendState {
     _sequence += 1;
 
     return '${prefix}_$_sequence';
+  }
+
+  String nextInvitationCode() {
+    _sequence += 1;
+
+    return 'INV-${_sequence.toRadixString(36).toUpperCase().padLeft(4, '0')}';
   }
 }
 
