@@ -170,6 +170,28 @@ void main() {
     );
   });
 
+  testWidgets('tapping an oldest-sort entry still opens that pin',
+      (WidgetTester tester) async {
+    final List<String> navigatedPinIds = <String>[];
+
+    await _pumpTimeline(
+      tester,
+      timelineRepository: _FakeTimelineRepository(items: samplePins),
+      onPinDetail: navigatedPinIds.add,
+    );
+
+    await tester.tap(find.text(l10n.sortOldest));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pin c'));
+    await tester.pumpAndSettle();
+
+    expect(navigatedPinIds, <String>['c']);
+    expect(
+      find.byKey(const ValueKey<String>('pin-detail-probe')),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('back from pin detail returns to the timeline (Req 6.5)',
       (WidgetTester tester) async {
     await _pumpTimeline(

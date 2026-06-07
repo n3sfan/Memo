@@ -288,13 +288,12 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
               height: 160,
               margin: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
-                color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(16),
-                image: const DecorationImage(
-                  image: NetworkImage(
-                    'https://tile.openstreetmap.org/13/6511/3850.png',
-                  ),
-                  fit: BoxFit.cover,
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFEAF1EC),
+                    Color(0xFFD9E8DD),
+                  ],
                 ),
               ),
               child: const Center(
@@ -307,13 +306,20 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
               height: 200,
               margin: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
-                color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(16),
-                image: const DecorationImage(
-                  image: NetworkImage(
-                    'https://images.unsplash.com/photo-1542314831-c6a4d14d8c85',
-                  ),
-                  fit: BoxFit.cover,
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFFFE8E0),
+                    Color(0xFFFFCBB8),
+                    Color(0xFFFFD27B),
+                  ],
+                ),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.photo_outlined,
+                  size: 56,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -360,7 +366,7 @@ class _PublicSharedPinScreenState extends State<PublicSharedPinScreen> {
                       children: [
                         Icon(Icons.location_on_outlined, size: 18),
                         SizedBox(width: 8),
-                        Text('11.9406° N, 108.4583° E'),
+                        Text('Vị trí đã lưu trên bản đồ'),
                         Spacer(),
                         Icon(Icons.copy, size: 16, color: Colors.black54),
                       ],

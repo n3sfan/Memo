@@ -245,6 +245,20 @@ void main() {
 
     expect(find.byKey(const Key('login_start_button')), findsOneWidget);
   });
+
+  testWidgets('public shared pin hides raw coordinates', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PublicSharedPinScreen(token: 'share_test'),
+      ),
+    );
+
+    expect(find.text('Vị trí đã lưu trên bản đồ'), findsOneWidget);
+    expect(find.textContaining('11.9406'), findsNothing);
+    expect(find.textContaining('108.4583'), findsNothing);
+  });
 }
 
 void _setMobileViewport(WidgetTester tester) {

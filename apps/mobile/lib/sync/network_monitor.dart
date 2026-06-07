@@ -63,10 +63,8 @@ final networkMonitorProvider = Provider<NetworkMonitor>((ref) {
 /// Exposes the current online/offline signal as a reactive provider.
 ///
 /// Resolves the current status immediately and then tracks connectivity
-/// changes. Consumers (e.g. `MediaUrlController`, the Timeline and Pin Detail
-/// views) watch this for Offline_Mode behavior. Defaults to
-/// [NetworkStatus.online] until the first reading resolves so content is not
-/// pessimistically degraded on startup.
+/// changes. Consumers (e.g. `MediaUrlController`) watch this for Offline_Mode
+/// behavior. The provider is loading until the initial reading resolves.
 final networkStatusProvider = StreamProvider<NetworkStatus>((ref) async* {
   final NetworkMonitor monitor = ref.watch(networkMonitorProvider);
   yield await monitor.currentStatus();

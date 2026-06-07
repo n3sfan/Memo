@@ -67,8 +67,7 @@ void main() {
       await changes.close();
     });
 
-    test('defaults to online when offline is reported by the monitor',
-        () async {
+    test('emits offline when offline is reported by the monitor', () async {
       final StreamController<NetworkStatus> changes =
           StreamController<NetworkStatus>.broadcast();
       final _FakeNetworkMonitor monitor = _FakeNetworkMonitor(
