@@ -9,18 +9,35 @@ export class PinMediaDto {
   url?: string;
 }
 
-export class PinDto {
+export class PublicPinMediaDto {
   id!: string;
-  mapId!: string;
+  pinId!: string;
+  mediaType!: 'image' | 'text' | 'audio';
+  mimeType!: string;
+  sizeBytes!: number;
+  createdAt!: string;
+  url!: string;
+}
+
+export class PinCoreDto {
+  id!: string;
   title!: string;
   note?: string | null;
   memoryDate?: string | null;
   lat!: number;
   lng!: number;
-  media!: PinMediaDto[];
   createdAt!: string;
   updatedAt!: string;
+}
+
+export class PinDto extends PinCoreDto {
+  mapId!: string;
+  media!: PinMediaDto[];
   clientId?: string | null;
+}
+
+export class PublicPinDto extends PinCoreDto {
+  media!: PublicPinMediaDto[];
 }
 
 export class PinsListResponseDto {

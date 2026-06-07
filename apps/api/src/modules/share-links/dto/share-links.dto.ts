@@ -1,4 +1,4 @@
-import { PinDto } from '../../pins/dto/pins.dto';
+import { PublicPinDto } from '../../pins/dto/pins.dto';
 
 export class CreateShareLinkRequestDto {
   expiresAt?: string;
@@ -15,8 +15,8 @@ export class ShareLinkDto {
 }
 
 export class PublicSharedPinDto {
-  pin!: PinDto;
   shareLinkId!: string;
+  pin!: PublicPinDto;
 }
 
 export class RevokeShareLinkResponseDto {

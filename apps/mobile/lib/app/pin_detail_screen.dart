@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/models/models.dart';
 import '../data/repository_providers.dart';
+import 'share_moment_sheet.dart';
 import 'theme.dart';
 
 class PinDetailScreen extends ConsumerStatefulWidget {
@@ -408,116 +409,18 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
   }
 
   void _showShareSheet(BuildContext context) {
+    final PinDto? pin = _pin;
+    if (pin == null) {
+      return;
+    }
+
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Chia sẻ một khoảnh khắc',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              const Icon(
-                Icons.send_outlined,
-                size: 48,
-                color: MemoTheme.primary,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Chỉ kỷ niệm này (gồm ghi chú, ảnh, âm thanh\nvà vị trí) sẽ được chia sẻ qua liên kết.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.black54),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.link, size: 16, color: Colors.black54),
-                    const SizedBox(width: 8),
-                    const Expanded(child: Text('memo.app/p/7k3a9m2d')),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        'Sao chép',
-                        style: TextStyle(color: MemoTheme.primary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.copy),
-                      label: const Text('Sao chép liên kết'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.ios_share),
-                      label: const Text('Chia sẻ'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  const Icon(Icons.public, color: MemoTheme.primary),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Đang chia sẻ',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Bất kỳ ai có liên kết đều có thể xem.',
-                          style: TextStyle(fontSize: 12, color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: true,
-                    onChanged: (v) {},
-                    activeThumbColor: MemoTheme.primary,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              TextButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.block, color: MemoTheme.danger),
-                label: const Text(
-                  'Thu hồi liên kết',
-                  style: TextStyle(color: MemoTheme.danger),
-                ),
-              ),
-            ],
-          ),
-        );
+        return ShareMomentSheet(pin: pin);
       },
     );
   }

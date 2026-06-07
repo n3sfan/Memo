@@ -82,6 +82,50 @@ void main() {
     expect(find.text('pin-pin_sai_gon_1'), findsOneWidget);
   });
 
+  testWidgets('map pin preview share opens the share moment sheet', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = GoRouter(
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/',
+          builder: (BuildContext context, GoRouterState state) {
+            return const MapScreen(mapViewBuilder: _buildFakeMapView);
+          },
+        ),
+        GoRoute(
+          path: '/timeline',
+          builder: (BuildContext context, GoRouterState state) {
+            return const Scaffold(body: Text('timeline-route'));
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('fake-marker-pin_sai_gon_1')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.share));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Chia sẻ một khoảnh khắc'), findsOneWidget);
+    expect(find.byKey(const Key('share_moment_link')), findsOneWidget);
+  });
+
   testWidgets('pick mode opens the pin editor with map coordinates', (
     WidgetTester tester,
   ) async {

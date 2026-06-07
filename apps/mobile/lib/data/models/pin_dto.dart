@@ -1,18 +1,53 @@
 import 'json.dart';
 import 'media_dto.dart';
 
-class PinDto {
-  const PinDto({
+class PinCoreDto {
+  const PinCoreDto({
     required this.id,
-    required this.mapId,
     required this.title,
     required this.note,
     required this.memoryDate,
     required this.lat,
     required this.lng,
-    required this.media,
     required this.createdAt,
     required this.updatedAt,
+  });
+
+  final String id;
+  final String title;
+  final String? note;
+  final DateTime? memoryDate;
+  final double lat;
+  final double lng;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  JsonMap coreJson() {
+    return <String, Object?>{
+      'id': id,
+      'title': title,
+      'note': note,
+      'memoryDate': memoryDate == null ? null : writeDateTime(memoryDate!),
+      'lat': lat,
+      'lng': lng,
+      'createdAt': writeDateTime(createdAt),
+      'updatedAt': writeDateTime(updatedAt),
+    };
+  }
+}
+
+class PinDto extends PinCoreDto {
+  const PinDto({
+    required super.id,
+    required this.mapId,
+    required super.title,
+    required super.note,
+    required super.memoryDate,
+    required super.lat,
+    required super.lng,
+    required this.media,
+    required super.createdAt,
+    required super.updatedAt,
     this.clientId,
   });
 
@@ -36,31 +71,57 @@ class PinDto {
     );
   }
 
-  final String id;
   final String mapId;
-  final String title;
-  final String? note;
-  final DateTime? memoryDate;
-  final double lat;
-  final double lng;
   final List<PinMediaDto> media;
-  final DateTime createdAt;
-  final DateTime updatedAt;
   final String? clientId;
 
   JsonMap toJson() {
     return <String, Object?>{
-      'id': id,
+      ...coreJson(),
       'mapId': mapId,
-      'title': title,
-      'note': note,
-      'memoryDate': memoryDate == null ? null : writeDateTime(memoryDate!),
-      'lat': lat,
-      'lng': lng,
       'media': media.map((PinMediaDto item) => item.toJson()).toList(),
-      'createdAt': writeDateTime(createdAt),
-      'updatedAt': writeDateTime(updatedAt),
       'clientId': clientId,
+    };
+  }
+}
+
+class PublicPinDto extends PinCoreDto {
+  const PublicPinDto({
+    required super.id,
+    required super.title,
+    required super.note,
+    required super.memoryDate,
+    required super.lat,
+    required super.lng,
+    required this.media,
+    required super.createdAt,
+    required super.updatedAt,
+  });
+
+  factory PublicPinDto.fromJson(Object? value) {
+    final JsonMap json = asJsonMap(value, name: 'public pin');
+
+    return PublicPinDto(
+      id: readString(json, 'id'),
+      title: readString(json, 'title'),
+      note: readOptionalString(json, 'note'),
+      memoryDate: readOptionalDateTime(json, 'memoryDate'),
+      lat: readDouble(json, 'lat'),
+      lng: readDouble(json, 'lng'),
+      media: asJsonMapList(json['media'], name: 'media')
+          .map(PublicPinMediaDto.fromJson)
+          .toList(growable: false),
+      createdAt: readDateTime(json, 'createdAt'),
+      updatedAt: readDateTime(json, 'updatedAt'),
+    );
+  }
+
+  final List<PublicPinMediaDto> media;
+
+  JsonMap toJson() {
+    return <String, Object?>{
+      ...coreJson(),
+      'media': media.map((PublicPinMediaDto item) => item.toJson()).toList(),
     };
   }
 }

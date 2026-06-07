@@ -12,6 +12,7 @@ import 'mock/fake_auth_repository.dart';
 import 'mock/fake_map_repository.dart';
 import 'mock/fake_media_repository.dart';
 import 'mock/fake_pin_repository.dart';
+import 'mock/fake_share_repository.dart';
 import 'mock/fake_timeline_repository.dart';
 import 'mock/mock_data.dart';
 import 'repositories/repositories.dart';
@@ -106,4 +107,12 @@ final timelineRepositoryProvider = Provider<TimelineRepository>((ref) {
   }
 
   return ApiTimelineRepository(ref.watch(apiClientProvider));
+});
+
+final shareRepositoryProvider = Provider<ShareRepository>((ref) {
+  if (ref.watch(useMockRepositoriesProvider)) {
+    return FakeShareRepository(ref.watch(mockBackendStateProvider));
+  }
+
+  return ApiShareRepository(ref.watch(apiClientProvider));
 });

@@ -70,6 +70,7 @@ Status conventions:
 - `404 not_found`: resource does not exist, or the API intentionally hides
   private resource existence from unauthorized users.
 - `409 conflict`: request is valid but conflicts with an existing state.
+- `410 link_revoked`: public share link used to exist but has been revoked.
 - `500 internal_error`: unexpected server failure. The message must not leak
   credentials, tokens, connection strings or internal stack traces.
 
@@ -477,6 +478,121 @@ Response:
     "items": [],
     "nextCursor": null,
     "hasMore": false
+  },
+  "requestId": "req_..."
+}
+```
+
+## Share Links
+
+Share links expose exactly one pin and must not leak the parent map, sibling
+pins, owner/member data or storage object keys.
+
+Create share link:
+
+```http
+POST /api/v1/pins/:pinId/share-links
+Authorization: Bearer <accessToken>
+```
+
+Body:
+
+```json
+{}
+```
+
+`expiresAt` is not supported in this slice. Sending it returns
+`422 validation_error`.
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "share_123",
+    "pinId": "pin_123",
+    "token": "aB3dE5fG7hI9",
+    "url": "https://memo.app/p/aB3dE5fG7hI9",
+    "revoked": false,
+    "createdAt": "2026-05-30T10:20:00.000Z",
+    "expiresAt": null
+  },
+  "requestId": "req_..."
+}
+```
+
+Create requires read access to the source pin. Tokens are 12-character
+URL-safe random IDs using `[A-Za-z0-9_-]`; creation retries if a generated token
+already exists.
+
+Resolve public shared pin:
+
+```http
+GET /api/v1/share/:token
+```
+
+This endpoint is public and does not require a bearer token.
+
+Response:
+
+```json
+{
+  "data": {
+    "shareLinkId": "share_123",
+    "pin": {
+      "id": "pin_123",
+      "title": "Da Lat trip",
+      "note": "First day",
+      "memoryDate": "2026-05-30T00:00:00.000Z",
+      "lat": 11.9404,
+      "lng": 108.4583,
+      "media": [
+        {
+          "id": "media_123",
+          "pinId": "pin_123",
+          "mediaType": "image",
+          "mimeType": "image/jpeg",
+          "sizeBytes": 1048576,
+          "createdAt": "2026-05-30T10:16:00.000Z",
+          "url": "https://..."
+        }
+      ],
+      "createdAt": "2026-05-30T10:00:00.000Z",
+      "updatedAt": "2026-05-30T10:00:00.000Z"
+    }
+  },
+  "requestId": "req_..."
+}
+```
+
+The public response intentionally omits `mapId`, `clientId`, media `objectKey`,
+map metadata, owner/member data and all sibling pins. Unknown tokens return
+`404 not_found`. Revoked links return:
+
+```json
+{
+  "error": "link_revoked",
+  "message": "Share link has been revoked.",
+  "details": {},
+  "requestId": "req_..."
+}
+```
+
+Revoke share link:
+
+```http
+DELETE /api/v1/share-links/:shareLinkId
+Authorization: Bearer <accessToken>
+```
+
+Only the link creator can revoke it. Repeated revoke is idempotent.
+
+Response:
+
+```json
+{
+  "data": {
+    "revoked": true
   },
   "requestId": "req_..."
 }

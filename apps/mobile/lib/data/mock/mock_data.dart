@@ -53,15 +53,48 @@ final List<PinDto> mockPins = <PinDto>[
 class MockBackendState {
   MockBackendState.seeded()
       : maps = <MapDto>[mockPersonalMap],
-        pins = <PinDto>[...mockPins];
+        pins = <PinDto>[...mockPins],
+        shareLinks = <MockShareLink>[];
 
   final List<MapDto> maps;
   final List<PinDto> pins;
+  final List<MockShareLink> shareLinks;
   int _sequence = 100;
 
   String nextId(String prefix) {
     _sequence += 1;
 
     return '${prefix}_$_sequence';
+  }
+}
+
+class MockShareLink {
+  const MockShareLink({
+    required this.id,
+    required this.pinId,
+    required this.token,
+    required this.url,
+    required this.createdAt,
+    required this.revoked,
+  });
+
+  final String id;
+  final String pinId;
+  final String token;
+  final String url;
+  final DateTime createdAt;
+  final bool revoked;
+
+  MockShareLink copyWith({
+    bool? revoked,
+  }) {
+    return MockShareLink(
+      id: id,
+      pinId: pinId,
+      token: token,
+      url: url,
+      createdAt: createdAt,
+      revoked: revoked ?? this.revoked,
+    );
   }
 }

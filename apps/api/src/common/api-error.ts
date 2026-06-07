@@ -116,3 +116,10 @@ export function throwPayloadTooLarge(
     details,
   );
 }
+
+export function throwLinkRevoked(
+  message = 'Share link has been revoked.',
+  details: ApiErrorDetails = {},
+): never {
+  throw new ApiException(HttpStatus.GONE, 'link_revoked', message, details);
+}

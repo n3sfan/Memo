@@ -73,6 +73,52 @@ class PinMediaDto {
   }
 }
 
+class PublicPinMediaDto {
+  const PublicPinMediaDto({
+    required this.id,
+    required this.pinId,
+    required this.mediaType,
+    required this.mimeType,
+    required this.sizeBytes,
+    required this.createdAt,
+    required this.url,
+  });
+
+  factory PublicPinMediaDto.fromJson(Object? value) {
+    final JsonMap json = asJsonMap(value, name: 'public pin media');
+
+    return PublicPinMediaDto(
+      id: readString(json, 'id'),
+      pinId: readString(json, 'pinId'),
+      mediaType: PinMediaType.fromWire(readString(json, 'mediaType')),
+      mimeType: readString(json, 'mimeType'),
+      sizeBytes: readInt(json, 'sizeBytes'),
+      createdAt: readDateTime(json, 'createdAt'),
+      url: readString(json, 'url'),
+    );
+  }
+
+  final String id;
+  final String pinId;
+  final PinMediaType mediaType;
+  final String mimeType;
+  final int sizeBytes;
+  final DateTime createdAt;
+  final String url;
+
+  JsonMap toJson() {
+    return <String, Object?>{
+      'id': id,
+      'pinId': pinId,
+      'mediaType': mediaType.toWire(),
+      'mimeType': mimeType,
+      'sizeBytes': sizeBytes,
+      'createdAt': writeDateTime(createdAt),
+      'url': url,
+    };
+  }
+}
+
 class PresignRequestDto {
   const PresignRequestDto({
     required this.mediaType,

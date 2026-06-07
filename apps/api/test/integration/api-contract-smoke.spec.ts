@@ -11,23 +11,33 @@ import { MapsController } from '../../src/modules/maps/maps.controller';
 import { MapsService } from '../../src/modules/maps/maps.service';
 import { PinsController } from '../../src/modules/pins/pins.controller';
 import { PinsService } from '../../src/modules/pins/pins.service';
+import { ShareLinksController } from '../../src/modules/share-links/share-links.controller';
+import { ShareLinksService } from '../../src/modules/share-links/share-links.service';
 import { TimelineController } from '../../src/modules/timeline/timeline.controller';
 import { TimelineService } from '../../src/modules/timeline/timeline.service';
+import { throwLinkRevoked } from '../../src/common/api-error';
 
 describe('API contract smoke tests', () => {
   let app: INestApplication;
   let tokenService: AuthTokenService;
   let mapsService: jest.Mocked<MapsService>;
   let pinsService: jest.Mocked<PinsService>;
+  let shareLinksService: jest.Mocked<ShareLinksService>;
   let timelineService: jest.Mocked<TimelineService>;
 
   beforeEach(async () => {
     mapsService = createMapsServiceMock();
     pinsService = createPinsServiceMock();
+    shareLinksService = createShareLinksServiceMock();
     timelineService = createTimelineServiceMock();
 
     const moduleRef = await Test.createTestingModule({
-      controllers: [MapsController, PinsController, TimelineController],
+      controllers: [
+        MapsController,
+        PinsController,
+        ShareLinksController,
+        TimelineController,
+      ],
       providers: [
         JwtAuthGuard,
         JwtService,
@@ -43,6 +53,10 @@ describe('API contract smoke tests', () => {
         {
           provide: PinsService,
           useValue: pinsService,
+        },
+        {
+          provide: ShareLinksService,
+          useValue: shareLinksService,
         },
         {
           provide: TimelineService,
@@ -222,6 +236,64 @@ describe('API contract smoke tests', () => {
     });
   });
 
+  it('returns the standard envelope for public share-link resolve', async () => {
+    shareLinksService.resolvePublicPin.mockResolvedValue({
+      shareLinkId: 'share_1',
+      pin: {
+        id: 'pin_1',
+        title: 'Shared pin',
+        note: 'Only this memory.',
+        memoryDate: '2026-05-30T00:00:00.000Z',
+        lat: 11.9404,
+        lng: 108.4583,
+        media: [],
+        createdAt: '2026-05-30T10:00:00.000Z',
+        updatedAt: '2026-05-30T10:00:00.000Z',
+      },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/share/share-token')
+      .set('x-request-id', 'req_contract_share_public')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      data: {
+        shareLinkId: 'share_1',
+        pin: {
+          id: 'pin_1',
+          title: 'Shared pin',
+          note: 'Only this memory.',
+          memoryDate: '2026-05-30T00:00:00.000Z',
+          lat: 11.9404,
+          lng: 108.4583,
+          media: [],
+          createdAt: '2026-05-30T10:00:00.000Z',
+          updatedAt: '2026-05-30T10:00:00.000Z',
+        },
+      },
+      requestId: 'req_contract_share_public',
+    });
+  });
+
+  it('returns the standard error envelope for revoked public share links', async () => {
+    shareLinksService.resolvePublicPin.mockImplementation(() => {
+      throwLinkRevoked();
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/share/revoked-token')
+      .set('x-request-id', 'req_contract_share_revoked')
+      .expect(410);
+
+    expect(response.body).toEqual({
+      error: 'link_revoked',
+      message: 'Share link has been revoked.',
+      details: {},
+      requestId: 'req_contract_share_revoked',
+    });
+  });
+
   async function accessToken(): Promise<string> {
     const session = await tokenService.createSession({
       id: 'user_1',
@@ -256,6 +328,14 @@ function createPinsServiceMock(): jest.Mocked<PinsService> {
     updatePin: jest.fn(),
     deletePin: jest.fn(),
   } as unknown as jest.Mocked<PinsService>;
+}
+
+function createShareLinksServiceMock(): jest.Mocked<ShareLinksService> {
+  return {
+    createShareLink: jest.fn(),
+    resolvePublicPin: jest.fn(),
+    revokeShareLink: jest.fn(),
+  } as unknown as jest.Mocked<ShareLinksService>;
 }
 
 function createTimelineServiceMock(): jest.Mocked<TimelineService> {

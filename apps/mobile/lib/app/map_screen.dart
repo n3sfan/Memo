@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../data/models/models.dart';
 import '../map/map.dart';
 import 'map_view_controller.dart';
+import 'share_moment_sheet.dart';
 import 'theme.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -78,7 +79,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     .toList(growable: false),
                 onViewportChanged: controller.viewportChanged,
                 onMarkerTap: (String pinId) {
-                  _showPinPreview(context, pinId);
+                  final PinDto pin = state.pins.firstWhere(
+                    (PinDto item) => item.id == pinId,
+                  );
+                  _showPinPreview(context, pin);
                 },
                 onTap: (Coordinates coordinates) {
                   if (_isPicking) {
@@ -388,13 +392,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  void _showPinPreview(BuildContext context, String pinId) {
+  void _showPinPreview(BuildContext context, PinDto pin) {
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => Padding(
+      builder: (sheetContext) => Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -455,25 +459,43 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   icon: Icons.article_outlined,
                   label: 'Xem chi tiết',
                   onTap: () {
-                    Navigator.pop(context);
-                    context.push('/pins/${Uri.encodeComponent(pinId)}');
+                    Navigator.pop(sheetContext);
+                    context.push('/pins/${Uri.encodeComponent(pin.id)}');
                   },
                 ),
                 _SheetAction(
                   icon: Icons.location_on,
                   label: 'Xem trên bản đồ',
-                  onTap: () => Navigator.pop(context),
+                  onTap: () => Navigator.pop(sheetContext),
                 ),
                 _SheetAction(
                   icon: Icons.share,
                   label: 'Chia sẻ',
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) {
+                        return;
+                      }
+                      _showShareSheet(context, pin);
+                    });
+                  },
                 ),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showShareSheet(BuildContext context, PinDto pin) {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => ShareMomentSheet(pin: pin),
     );
   }
 
