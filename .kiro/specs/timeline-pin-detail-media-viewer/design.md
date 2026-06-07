@@ -13,16 +13,17 @@ The design follows the repository's mandatory data-flow rule (`ApiClient -> Repo
 Provider -> UI`). The UI layer depends only on Riverpod providers and never calls Dio, HTTP, or
 backend endpoint paths directly. Media binaries are never proxied through the backend or stored
 in the database: the backend signs a short-lived **Authorized Read URL** over an object key, and
-the mobile client loads bytes from object storage using that URL. Text and coordinate content
-must remain visible in offline mode while media degrades to placeholders, and all new
-user-facing strings must be localizable in English and Vietnamese.
+the mobile client loads bytes from object storage using that URL. Text and friendly saved
+map-location status must remain visible in offline mode while media degrades to placeholders,
+and all new user-facing strings must be localizable in English and Vietnamese.
 
 ### Goals
 
 - Render the Timeline from `TimelineRepository`, with a newest/oldest sort toggle.
 - Keep pins without a `memoryDate` visible and ordered last for both sort directions.
 - Navigate Timeline -> Pin Detail -> Media Viewer using the existing `go_router` routes.
-- Display pin title, note, memory date, and coordinates from the `PinDto`.
+- Display pin title, note, memory date, and friendly saved map-location status from the `PinDto`;
+  raw latitude/longitude stay internal for map focus and persistence.
 - Load image and audio media through Authorized Read URLs obtained from `MediaRepository`.
 - Degrade gracefully to placeholders when media is offline, pending, uncached, or failing.
 - Work end-to-end against fake repositories when `USE_MOCK_DATA=true`.
@@ -263,12 +264,13 @@ final mediaUrlControllerProvider = AutoDisposeAsyncNotifierProvider
 
 - Watches `pinDetailControllerProvider(pinId)`.
 - Displays title (Req 5.1), note when non-empty (Req 5.2), memory-date label or "date unknown"
-  (Req 5.3-5.4), coordinates when valid or "coordinates unavailable" (Req 5.5-5.6).
+  (Req 5.3-5.4), and a friendly saved-location/unavailable-location label without exposing raw
+  latitude/longitude values (Req 5.5-5.6).
 - Renders a selectable thumbnail per image media item (Req 8.1) and an `AudioPlayer` per audio
   media item (Req 9.1), each backed by its own `mediaUrlControllerProvider(mediaId)`.
 - Shows a `MediaPlaceholder` for any media that is offline/pending/uncached/failed (Req 10.2,
   10.3, 7.4).
-- Keeps title/note/date/coordinates visible regardless of media state (Req 10.1).
+- Keeps title/note/date/saved-location status visible regardless of media state (Req 10.1).
 - Action entry points: "view on map" -> `context.go('/?lat=..&lng=..')` (Req 6.1), edit ->
   `context.push('/pins/{id}/edit')` (Req 6.2), delete entry point (Req 6.3), share entry point
   (Req 6.4). Back returns to Timeline via the navigation stack (Req 6.5).
@@ -308,7 +310,7 @@ to decide Offline_Mode behavior (Req 10).
 
 New keys added to `app_en.arb` and `app_vi.arb` (Req 12.4), e.g.:
 `timelineTitle`, `sortNewest`, `sortOldest`, `timelineEmpty`, `timelineError`, `retry`,
-`dateUnknown`, `coordinatesUnavailable`, `note`, `coordinates`, `viewOnMap`, `edit`, `share`,
+`dateUnknown`, `locationUnavailable`, `note`, `viewOnMap`, `edit`, `share`,
 `delete`, `mediaUnavailable`, `audioUnavailable`, `pinLoadError`. Strings are read through
 `AppLocalizations.of(context)`; the "date unknown" label falls back to the English string when
 the localized value is missing (Req 3.3, 5.4).
@@ -420,8 +422,8 @@ with that URL; and when the repository fails the state is `MediaUnavailable`.
 | Read URL request fails | `MediaUrlController` -> `MediaUnavailable`; item shows `MediaPlaceholder` | 7.4 |
 | Image fails to load from URL | Image_Viewer shows `MediaPlaceholder` + localized retry; retry re-requests URL | 8.4, 8.5 |
 | Audio fails to load from URL | Audio_Player hides play/pause, shows unavailable placeholder | 9.5 |
-| Offline mode | Text/coordinates stay visible; each unloadable media shows placeholder; recovery reloads media | 10.1, 10.2, 10.5 |
-| Missing coordinates | Show localized "coordinates unavailable" label | 5.6 |
+| Offline mode | Text and friendly saved-location status stay visible; each unloadable media shows placeholder; recovery reloads media | 10.1, 10.2, 10.5 |
+| Missing coordinates | Show localized friendly unavailable-location label without raw coordinate wording | 5.6 |
 | Missing memory date | Show localized "date unknown" label, English fallback | 3.3, 5.4 |
 | Mock-mode failure | Requesting view shows localized error; no fallback to real repos | 11.5 |
 
@@ -462,12 +464,13 @@ Required by Requirement 13:
 - Selecting a Timeline entry navigates to Pin Detail for the matching pin id (Req 13.3).
 - Pin Detail shows a `MediaPlaceholder` when a read URL cannot be retrieved or media fails to
   load (Req 13.4).
-- Pin Detail shows title, note, and coordinates when media is unavailable (Req 13.5).
+- Pin Detail shows title, note, and friendly saved map-location status when media is unavailable
+  (Req 13.5).
 
 Additional example/edge tests:
 - Empty timeline shows the localized empty-state (Req 1.6); failed timeline shows error + retry
   (Req 1.7).
-- "Date unknown" and "coordinates unavailable" labels render for missing data (Req 3.3, 5.4,
+- "Date unknown" and friendly unavailable-location labels render for missing data (Req 3.3, 5.4,
   5.6).
 - Audio player hides controls and shows unavailable placeholder on failure (Req 9.5).
 - Localization smoke test: every new key resolves in both `en` and `vi` (Req 12.4).

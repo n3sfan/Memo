@@ -242,12 +242,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${_pickedCoordinates!.lat.toStringAsFixed(5)}, ${_pickedCoordinates!.lng.toStringAsFixed(5)}',
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.my_location, size: 16),
+                          children: const [
+                            Icon(Icons.my_location, size: 16),
+                            SizedBox(width: 8),
+                            Text('Vị trí đã chọn'),
                           ],
                         ),
                       ),

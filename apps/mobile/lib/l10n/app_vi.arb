@@ -48,25 +48,21 @@
   "@dateUnknown": {
     "description": "Label shown for a memory that has no recorded date."
   },
-  "coordinatesUnavailable": "Không có tọa độ",
-  "@coordinatesUnavailable": {
-    "description": "Label shown when a pin has no valid coordinates."
+  "locationUnavailable": "Chưa có vị trí trên bản đồ",
+  "@locationUnavailable": {
+    "description": "Friendly label shown when a pin has no usable saved map location."
   },
   "location": "Vị trí",
   "@location": {
     "description": "Section label for a pin's saved map location."
   },
-  "savedMapLocation": "Đã lưu trên bản đồ",
+  "savedMapLocation": "Đã lưu trên bản đồ của bạn",
   "@savedMapLocation": {
     "description": "Short text shown when a pin has a usable saved map location."
   },
   "note": "Ghi chú",
   "@note": {
     "description": "Section label for a pin's note text."
-  },
-  "coordinates": "Tọa độ",
-  "@coordinates": {
-    "description": "Section label for a pin's coordinates."
   },
   "viewOnMap": "Xem trên bản đồ",
   "@viewOnMap": {
@@ -108,11 +104,11 @@
   "@deleteFailed": {
     "description": "Snackbar text shown when deleting a pin fails."
   },
-  "mediaUnavailable": "Không có phương tiện",
+  "mediaUnavailable": "Chưa tải được nội dung này",
   "@mediaUnavailable": {
     "description": "Placeholder text shown when image media cannot be loaded."
   },
-  "audioUnavailable": "Không có âm thanh",
+  "audioUnavailable": "Chưa tải được âm thanh này",
   "@audioUnavailable": {
     "description": "Placeholder text shown when audio media cannot be loaded."
   },

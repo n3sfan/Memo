@@ -170,11 +170,11 @@ abstract class AppLocalizations {
   /// **'Không rõ ngày'**
   String get dateUnknown;
 
-  /// Label shown when a pin has no valid coordinates.
+  /// Friendly label shown when a pin has no usable saved map location.
   ///
   /// In vi, this message translates to:
-  /// **'Không có tọa độ'**
-  String get coordinatesUnavailable;
+  /// **'Chưa có vị trí trên bản đồ'**
+  String get locationUnavailable;
 
   /// Section label for a pin's saved map location.
   ///
@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// Short text shown when a pin has a usable saved map location.
   ///
   /// In vi, this message translates to:
-  /// **'Đã lưu trên bản đồ'**
+  /// **'Đã lưu trên bản đồ của bạn'**
   String get savedMapLocation;
 
   /// Section label for a pin's note text.
@@ -193,12 +193,6 @@ abstract class AppLocalizations {
   /// In vi, this message translates to:
   /// **'Ghi chú'**
   String get note;
-
-  /// Section label for a pin's coordinates.
-  ///
-  /// In vi, this message translates to:
-  /// **'Tọa độ'**
-  String get coordinates;
 
   /// Action label that opens the map focused on the pin.
   ///
@@ -263,13 +257,13 @@ abstract class AppLocalizations {
   /// Placeholder text shown when image media cannot be loaded.
   ///
   /// In vi, this message translates to:
-  /// **'Không có phương tiện'**
+  /// **'Chưa tải được nội dung này'**
   String get mediaUnavailable;
 
   /// Placeholder text shown when audio media cannot be loaded.
   ///
   /// In vi, this message translates to:
-  /// **'Không có âm thanh'**
+  /// **'Chưa tải được âm thanh này'**
   String get audioUnavailable;
 
   /// Error message shown when a pin fails to load.

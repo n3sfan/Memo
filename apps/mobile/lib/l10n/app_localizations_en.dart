@@ -45,19 +45,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dateUnknown => 'Date unknown';
 
   @override
-  String get coordinatesUnavailable => 'Coordinates unavailable';
+  String get locationUnavailable => 'No saved map location';
 
   @override
   String get location => 'Location';
 
   @override
-  String get savedMapLocation => 'Saved on map';
+  String get savedMapLocation => 'Saved on your map';
 
   @override
   String get note => 'Note';
-
-  @override
-  String get coordinates => 'Coordinates';
 
   @override
   String get viewOnMap => 'View on map';
@@ -90,10 +87,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteFailed => 'Could not delete this memory';
 
   @override
-  String get mediaUnavailable => 'Media unavailable';
+  String get mediaUnavailable => 'This media is not available right now';
 
   @override
-  String get audioUnavailable => 'Audio unavailable';
+  String get audioUnavailable => 'This audio is not available right now';
 
   @override
   String get pinLoadError => 'Could not load this memory';

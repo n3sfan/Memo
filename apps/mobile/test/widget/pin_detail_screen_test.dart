@@ -72,7 +72,7 @@ void main() {
   );
 
   testWidgets(
-    'renders title, note, and coordinates when media is unavailable '
+    'renders title, note, and friendly map location when media is unavailable '
     '(Req 13.5)',
     (WidgetTester tester) async {
       final PinDto pin = buildPin(
@@ -91,14 +91,14 @@ void main() {
       // ...but the pin's text content stays visible (Req 10.1).
       expect(find.text(pin.title), findsOneWidget);
       expect(find.text(pin.note!), findsOneWidget);
-      // Location is shown as a useful map-location section, with raw
-      // coordinates kept as secondary detail.
+      // Location is shown as a useful map-location section. Raw lat/lng stay
+      // internal so the UI reads like a memory app, not a database row.
       final String coordinateText =
           '${pin.lat.toStringAsFixed(4)}, ${pin.lng.toStringAsFixed(4)}';
       expect(find.text(l10n.savedMapLocation), findsOneWidget);
-      expect(find.textContaining(coordinateText), findsOneWidget);
-      // Not the "coordinates unavailable" fallback.
-      expect(find.text(l10n.coordinatesUnavailable), findsNothing);
+      expect(find.textContaining(coordinateText), findsNothing);
+      // Not the unavailable-location fallback.
+      expect(find.text(l10n.locationUnavailable), findsNothing);
     },
   );
 
@@ -137,7 +137,7 @@ void main() {
   });
 
   testWidgets(
-    'renders the "coordinates unavailable" label for invalid coordinates '
+    'renders a friendly unavailable-location label for invalid coordinates '
     '(Req 5.6)',
     (WidgetTester tester) async {
       // Out-of-range latitude makes _hasValidCoordinates return false.
@@ -153,7 +153,7 @@ void main() {
         mediaRepository: _FailingMediaRepository(),
       );
 
-      expect(find.text(l10n.coordinatesUnavailable), findsOneWidget);
+      expect(find.text(l10n.locationUnavailable), findsOneWidget);
     },
   );
 
@@ -197,6 +197,8 @@ void main() {
   testWidgets('share sheet exposes copyable memory text',
       (WidgetTester tester) async {
     final PinDto pin = buildPin(memoryDate: DateTime.utc(2026, 5, 20));
+    final String coordinateText =
+        '${pin.lat.toStringAsFixed(4)}, ${pin.lng.toStringAsFixed(4)}';
 
     await _pumpPinDetailRouter(
       tester,
@@ -209,6 +211,8 @@ void main() {
 
     expect(find.byType(SelectableText), findsOneWidget);
     expect(find.textContaining(pin.title), findsWidgets);
+    expect(find.textContaining(l10n.savedMapLocation), findsWidgets);
+    expect(find.textContaining(coordinateText), findsNothing);
     expect(find.widgetWithText(FilledButton, l10n.copy), findsOneWidget);
   });
 

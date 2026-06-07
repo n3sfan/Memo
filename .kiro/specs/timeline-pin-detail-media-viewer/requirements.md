@@ -12,9 +12,9 @@ directory, repositories, mock repositories, and DTOs) end-to-end.
 The work must respect repository conventions: the UI layer must depend on
 repositories/providers (Riverpod) and never call Dio or HTTP directly; media binaries are
 never stored in the backend or database (the backend signs presigned read URLs over object
-keys); offline mode must keep text and coordinates visible while media may be pending or
-uncached; user-facing strings must be localizable (en + vi); and the map provider stays
-behind project-owned ports in `apps/mobile/lib/map`.
+keys); offline mode must keep text and friendly saved-location status visible while media may
+be pending or uncached; user-facing strings must be localizable (en + vi); and the map
+provider stays behind project-owned ports in `apps/mobile/lib/map`.
 
 This document covers the Jira Sprint 2 epic "Timeline, Pin Detail and Media Viewer
 end-to-end" and its subtasks SCRUM-74, SCRUM-61, SCRUM-62, and SCRUM-75.
@@ -24,7 +24,7 @@ end-to-end" and its subtasks SCRUM-74, SCRUM-61, SCRUM-62, and SCRUM-75.
 - **Timeline_View**: The mobile screen (`timeline_screen.dart`) that lists pins of the active
   map ordered by memory date.
 - **Pin_Detail_View**: The mobile screen (`pin_detail_screen.dart`) that shows a single pin's
-  title, note, memory date, coordinates, media, and actions.
+  title, note, memory date, saved map-location status, media, and actions.
 - **Media_Viewer**: The mobile components that display a pin's image media full-screen and play
   a pin's audio media.
 - **Image_Viewer**: The Media_Viewer component that displays image media full-screen.
@@ -46,7 +46,7 @@ end-to-end" and its subtasks SCRUM-74, SCRUM-61, SCRUM-62, and SCRUM-75.
 - **Sort_Order**: The Timeline ordering selection, either `newest` (descending memory date) or
   `oldest` (ascending memory date).
 - **Offline_Mode**: The application state in which media cannot be loaded from the network and
-  text/coordinate content must remain visible.
+  text plus friendly saved-location status must remain visible.
 - **Media_Placeholder**: A visual stand-in shown when a media item is pending, uncached, or
   cannot be loaded.
 - **App_Shell**: The mobile navigation shell, including the bottom navigation bar and
@@ -136,8 +136,8 @@ read and act on that specific memory.
 
 ### Requirement 5: Display Pin Detail content
 
-**User Story:** As a user, I want to see a memory's title, note, date, and coordinates, so that
-I can revisit the full context of that memory.
+**User Story:** As a user, I want to see a memory's title, note, date, and saved map location, so
+that I can revisit the full context of that memory without seeing technical coordinate details.
 
 #### Acceptance Criteria
 
@@ -147,10 +147,10 @@ I can revisit the full context of that memory.
    localized date format.
 4. WHERE a Pin has no Memory_Date, THE Pin_Detail_View SHALL display a localized "date unknown"
    label, falling back to the English label if the localized string is unavailable.
-5. WHERE a Pin has valid latitude and longitude values, THE Pin_Detail_View SHALL display those
-   latitude and longitude values.
+5. WHERE a Pin has valid latitude and longitude values, THE Pin_Detail_View SHALL display a
+   localized saved-location label without showing raw latitude or longitude values.
 6. IF a Pin's latitude or longitude value is unavailable, THEN THE Pin_Detail_View SHALL display
-   a localized "coordinates unavailable" label instead of coordinate values.
+   a localized friendly unavailable-location label without mentioning raw coordinates.
 7. WHEN the Pin_Detail_View renders a Pin, THE Pin_Detail_View SHALL display content derived
    only from the Pin returned by the Pin_Repository.
 
@@ -227,13 +227,13 @@ audio memories.
 
 ### Requirement 10: Offline and unavailable media placeholders
 
-**User Story:** As a user, I want to still read my notes and coordinates when media cannot
-load, so that offline memories remain useful.
+**User Story:** As a user, I want to still read my notes and saved map-location status when media
+cannot load, so that offline memories remain useful.
 
 #### Acceptance Criteria
 
 1. WHILE the application is in Offline_Mode, THE Pin_Detail_View SHALL display the Pin's title,
-   note, Memory_Date label, and coordinates.
+   note, Memory_Date label, and friendly saved map-location status.
 2. WHILE the application is in Offline_Mode, THE Pin_Detail_View SHALL display a Media_Placeholder
    for each Pin_Media item that cannot be loaded.
 3. WHERE a Pin_Media item is pending or uncached, THE Pin_Detail_View SHALL display a
@@ -294,4 +294,4 @@ state, detail navigation, and media placeholders stay correct.
 4. THE mobile test suite SHALL include a test verifying that the Pin_Detail_View displays a
    Media_Placeholder when an Authorized_Read_URL cannot be retrieved or media fails to load.
 5. THE mobile test suite SHALL include a test verifying that the Pin_Detail_View displays the
-   Pin's title, note, and coordinates when media is unavailable.
+   Pin's title, note, and friendly saved map-location status when media is unavailable.

@@ -64,6 +64,15 @@ void main() {
       find.byKey(const ValueKey<String>('pin-editor-lng-field')),
       findsNothing,
     );
+    expect(find.text('Vị trí đã chọn trên bản đồ'), findsOneWidget);
+    expect(
+      find.textContaining(_coordinates.lat.toStringAsFixed(4)),
+      findsNothing,
+    );
+    expect(
+      find.textContaining(_coordinates.lng.toStringAsFixed(4)),
+      findsNothing,
+    );
     expect(pinRepository.createCalls, 1);
     expect(pinRepository.lastCreateRequest?.lat, _coordinates.lat);
     expect(pinRepository.lastCreateRequest?.lng, _coordinates.lng);

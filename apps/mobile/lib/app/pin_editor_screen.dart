@@ -455,11 +455,8 @@ class _HeaderCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '${coordinates!.lat.toStringAsFixed(4)}° N, ${coordinates!.lng.toStringAsFixed(4)}° E',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                          ),
+                          'Vị trí đã chọn',
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                   ],
@@ -536,7 +533,7 @@ class _LocationCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         coordinates != null
-                            ? '${coordinates!.lat.toStringAsFixed(4)}° N    /    ${coordinates!.lng.toStringAsFixed(4)}° E'
+                            ? 'Vị trí đã chọn trên bản đồ'
                             : 'Chưa chọn vị trí',
                         style: TextStyle(
                           fontSize: 14,

@@ -25,11 +25,10 @@ void main() {
     'timelineError': (l) => l.timelineError,
     'retry': (l) => l.retry,
     'dateUnknown': (l) => l.dateUnknown,
-    'coordinatesUnavailable': (l) => l.coordinatesUnavailable,
+    'locationUnavailable': (l) => l.locationUnavailable,
     'location': (l) => l.location,
     'savedMapLocation': (l) => l.savedMapLocation,
     'note': (l) => l.note,
-    'coordinates': (l) => l.coordinates,
     'viewOnMap': (l) => l.viewOnMap,
     'edit': (l) => l.edit,
     'share': (l) => l.share,
@@ -53,8 +52,8 @@ void main() {
     'vi': AppLocalizationsVi(),
   };
 
-  test('all 32 new keys are covered by the smoke test', () {
-    expect(newKeys.length, 32);
+  test('all 31 new keys are covered by the smoke test', () {
+    expect(newKeys.length, 31);
   });
 
   for (final localeEntry in locales.entries) {

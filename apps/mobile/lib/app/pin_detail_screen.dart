@@ -29,10 +29,10 @@ bool _hasValidCoordinates(PinDto pin) {
 /// Controller-driven Pin Detail view.
 ///
 /// Watches [pinDetailControllerProvider] and renders loading / error / data
-/// branches (Req 4.4). The loaded pin's text and coordinates stay visible
-/// regardless of media state (Req 10.1); media items load independently through
-/// [mediaUrlControllerProvider] and degrade to [MediaPlaceholder] when they
-/// cannot be loaded (Req 7.4, 10.2, 10.3).
+/// branches (Req 4.4). The loaded pin's text and saved map-location status stay
+/// visible regardless of media state (Req 10.1); media items load independently
+/// through [mediaUrlControllerProvider] and degrade to [MediaPlaceholder] when
+/// they cannot be loaded (Req 7.4, 10.2, 10.3).
 class PinDetailScreen extends ConsumerWidget {
   const PinDetailScreen({required this.pinId, super.key});
 
@@ -202,10 +202,7 @@ class _PinDetailView extends ConsumerWidget {
               const Divider(),
               const SizedBox(height: 16),
             ],
-            _LocationCard(
-              hasCoordinates: hasCoordinates,
-              coordinatesText: _coordinatesText(),
-            ),
+            _LocationCard(hasCoordinates: hasCoordinates),
             // Audio media: an AudioPlayer per audio item (Req 9.1), each backed
             // by its own mediaUrlControllerProvider.
             if (audioMedia.isNotEmpty) ...[
@@ -256,11 +253,8 @@ class _PinDetailView extends ConsumerWidget {
     );
   }
 
-  String _coordinatesText() {
-    return '${pin.lat.toStringAsFixed(4)}, ${pin.lng.toStringAsFixed(4)}';
-  }
-
   String _shareText(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
     final StringBuffer buffer = StringBuffer(pin.title);
     if (pin.note != null && pin.note!.isNotEmpty) {
       buffer
@@ -273,7 +267,7 @@ class _PinDetailView extends ConsumerWidget {
     if (_hasValidCoordinates(pin)) {
       buffer
         ..writeln()
-        ..write(_coordinatesText());
+        ..write(l10n.savedMapLocation);
     }
     return buffer.toString();
   }
@@ -400,13 +394,9 @@ class _PinDetailView extends ConsumerWidget {
 }
 
 class _LocationCard extends StatelessWidget {
-  const _LocationCard({
-    required this.hasCoordinates,
-    required this.coordinatesText,
-  });
+  const _LocationCard({required this.hasCoordinates});
 
   final bool hasCoordinates;
-  final String coordinatesText;
 
   @override
   Widget build(BuildContext context) {
@@ -434,19 +424,9 @@ class _LocationCard extends StatelessWidget {
                 Text(
                   hasCoordinates
                       ? l10n.savedMapLocation
-                      : l10n.coordinatesUnavailable,
+                      : l10n.locationUnavailable,
                   style: const TextStyle(color: Colors.black87),
                 ),
-                if (hasCoordinates) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '${l10n.coordinates}: $coordinatesText',
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

@@ -103,8 +103,10 @@ must go through the project-owned `AudioPlaybackPort`; the concrete
 independent playback port and Riverpod disposes it with the corresponding
 widget/provider lifecycle.
 
-When media cannot be resolved, Pin Detail keeps title, note, memory date and
-coordinates visible and renders a localized placeholder for that media item.
+When media cannot be resolved, Pin Detail keeps title, note, memory date and a
+friendly saved-location status visible and renders a localized placeholder for
+that media item. Raw latitude/longitude values remain internal route/data
+details and should not be shown in ordinary user-facing copy.
 Connectivity recovery causes the media URL provider to resolve again.
 
 Pin Detail opens a map location with `/?lat=<latitude>&lng=<longitude>`. The

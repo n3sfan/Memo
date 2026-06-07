@@ -133,6 +133,9 @@ void main() {
     );
     await tester.tapAt(mapBounds.topLeft + const Offset(24, 220));
     await tester.pumpAndSettle();
+    expect(find.text('Vị trí đã chọn'), findsOneWidget);
+    expect(find.textContaining('10.12345'), findsNothing);
+    expect(find.textContaining('106.65432'), findsNothing);
     await tester.tap(find.byIcon(Icons.location_on).last);
     await tester.pumpAndSettle();
 

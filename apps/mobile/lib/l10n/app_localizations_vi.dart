@@ -45,19 +45,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get dateUnknown => 'Không rõ ngày';
 
   @override
-  String get coordinatesUnavailable => 'Không có tọa độ';
+  String get locationUnavailable => 'Chưa có vị trí trên bản đồ';
 
   @override
   String get location => 'Vị trí';
 
   @override
-  String get savedMapLocation => 'Đã lưu trên bản đồ';
+  String get savedMapLocation => 'Đã lưu trên bản đồ của bạn';
 
   @override
   String get note => 'Ghi chú';
-
-  @override
-  String get coordinates => 'Tọa độ';
 
   @override
   String get viewOnMap => 'Xem trên bản đồ';
@@ -90,10 +87,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get deleteFailed => 'Không thể xóa kỷ niệm này';
 
   @override
-  String get mediaUnavailable => 'Không có phương tiện';
+  String get mediaUnavailable => 'Chưa tải được nội dung này';
 
   @override
-  String get audioUnavailable => 'Không có âm thanh';
+  String get audioUnavailable => 'Chưa tải được âm thanh này';
 
   @override
   String get pinLoadError => 'Không thể tải kỷ niệm này';

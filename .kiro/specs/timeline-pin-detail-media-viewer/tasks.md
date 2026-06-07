@@ -10,8 +10,8 @@ screens and media-viewer widgets, then localization and wiring. Property-based t
 (via `ProviderScope` overrides) cover rendering, navigation, and placeholder behavior.
 
 All UI depends on Riverpod providers only (never Dio/HTTP directly), media bytes load from
-Authorized Read URLs, text/coordinates stay visible offline, and every new user-facing string
-is localized in English and Vietnamese.
+Authorized Read URLs, text and friendly saved-location status stay visible offline, and every
+new user-facing string is localized in English and Vietnamese.
 
 ## Tasks
 
@@ -152,11 +152,11 @@ is localized in English and Vietnamese.
 
   - [x] 9.3 Rewrite `PinDetailScreen` to be controller-driven
     - Watch `pinDetailControllerProvider(pinId)`; display title, note when non-empty,
-      memory-date label or "date unknown", coordinates when valid or "coordinates unavailable",
+      memory-date label or "date unknown", friendly saved-location or unavailable-location label,
       and a localized error on load failure; render a selectable thumbnail per image media item
       and an `AudioPlayer` per audio media item each backed by `mediaUrlControllerProvider`;
       show `MediaPlaceholder` for offline/pending/uncached/failed media while keeping
-      title/note/date/coordinates visible
+      title/note/date/saved-location status visible
     - _Requirements: 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 8.1, 9.1, 10.1, 10.2, 10.3, 7.4, 12.2_
 
   - [x] 9.4 Wire Pin Detail navigation and action entry points
@@ -167,8 +167,9 @@ is localized in English and Vietnamese.
 
   - [x] 9.5 Write widget tests for `PinDetailScreen`
     - Verify `MediaPlaceholder` shows when a read URL cannot be retrieved or media fails to
-      load; verify title, note, and coordinates render when media is unavailable; verify
-      "date unknown" and "coordinates unavailable" labels render for missing data
+      load; verify title, note, and friendly saved-location status render when media is
+      unavailable; verify "date unknown" and friendly unavailable-location labels render for
+      missing data
     - _Requirements: 13.4, 13.5, 3.3, 5.4, 5.6_
 
 - [x] 10. Checkpoint - Ensure all tests pass
@@ -177,7 +178,7 @@ is localized in English and Vietnamese.
 - [x] 11. Add localization strings and finalize wiring
   - [x] 11.1 Add localization keys for en and vi
     - Add all new keys (`timelineTitle`, `sortNewest`, `sortOldest`, `timelineEmpty`,
-      `timelineError`, `retry`, `dateUnknown`, `coordinatesUnavailable`, `note`, `coordinates`,
+      `timelineError`, `retry`, `dateUnknown`, `locationUnavailable`, `note`,
       `viewOnMap`, `edit`, `share`, `delete`, `mediaUnavailable`, `audioUnavailable`,
       `pinLoadError`) to `app_en.arb` and `app_vi.arb`, run `flutter gen-l10n`, and implement the
       English fallback for the "date unknown" label
